@@ -1,45 +1,135 @@
 # Kennewick Man · The Ancient One
 ### 3D GIS Heritage & Indigenous Sovereignty Portal
 
-An interactive digital humanities and bioarchaeological visualization engine honoring **The Ancient One** (Kennewick Man). This web application integrates interactive 3D WebGL models, real-time MapLibre GIS mapping along the Columbia River, molecular DNA visualizations, and cultural context framed around Indigenous repatriation, the Native American Graves Protection and Repatriation Act (NAGPRA), and the 2017 reburial by the five claimant tribes.
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kennewick Man · The Ancient One · 3D GIS Heritage Matrix</title>
+</head>
+<body>
 
----
+    <h1>Kennewick Man · The Ancient One</h1>
+    <h3>3D GIS Heritage & Indigenous Sovereignty Portal</h3>
 
-## 🌿 Core Features
+    <p>⚠ <strong>Prototype Sample · Demonstrator Only · Not for Research Citation</strong></p>
+    <p>An experimental interface exploring how archaeological, bioarchaeological, and tribal heritage data might be presented interactively — through satellite terrain, 3D anatomical/artifact models, and multi-proxy narratives honoring Indigenous sovereignty and the 2017 reburial.</p>
 
-* **3D Aerial GIS Matrix**: Interactive MapLibre GL mapping of the Columbia River discovery site (Columbia Park, Kennewick, WA), the Burke Museum repository, and the Colville Reservation with custom star beacons and APA 7th academic citations.
-* **Living Land Acknowledgement**: Dedicated framing recognizing the ancestral homelands and sovereignty of the Confederated Tribes of the Colville Reservation, Nez Perce Tribe, Confederated Tribes of the Umatilla Indian Reservation, Yakama Nation, and the Wanapum People.
-* **Interactive 3D Anatomical & Artifact Viewer**: Three.js powered interactive holographic diagrams and artifact models (including the Cascade projectile point and skeletal reference plates).
-* **DNA & Molecular Architecture**: Visualizations of ancient DNA sequencing from the 2015 Copenhagen study (`Nature`), illustrating genetic continuity across 8,500 years in the Americas.
-* **Cultural & Ceremonial Symbolism**: Educational modules exploring traditional Plateau lifeways, sacred foods (camas, bitterroot, salmon), and cedar purification.
+    <p><strong>Asia Khan, Hon. BA</strong> (McMaster University)<br>
+    Behavioral UX Researcher & Design Anthropologist</p>
 
----
+    <p>🔗 <strong>Live Prototype</strong><br>
+    → View the interactive prototype<br>
+    <em>(If the link doesn't work, enable GitHub Pages in Settings → Pages → main branch → / (root))</em></p>
 
-## 🛠️ Tech Stack
+    <hr>
 
-* **Front-End Framework**: Pure HTML5, CSS3, Tailwind CSS (v3)
-* **3D Graphics**: Three.js (r128 WebGL rendering engine)
-* **Mapping Engine**: MapLibre GL JS & Esri World Imagery raster tiles
-* **Icons & Fonts**: FontAwesome 6.4, Inter, Merriweather
-* **Design System**: Glassmorphism UI with organic earth-tone palettes (`#0b1711`, `#C85A32`, `#D4AF37`)
+    <h2>⚠ Disclaimer</h2>
+    <p>This is a design prototype and demonstrator. It is intended to show how archaeological and tribal historical information could be presented respectfully, not to serve as a primary research source or a substitute for tribal consultation.</p>
+    <ul>
+        <li>Site names and APA citations point to real literature</li>
+        <li>Coordinates, artifact descriptions, and numerical indices are illustrative examples</li>
+        <li>All 3D models and artifact images are placeholders or generic anatomical/artifact references</li>
+        <li><strong>Do not cite this prototype in academic work</strong> — consult original publications and the claimant tribes</li>
+    </ul>
 
----
+    <hr>
 
+    <h2>What This Demonstrates</h2>
+    <ul>
+        <li><strong>Spatial context</strong> — Real satellite imagery with 3D terrain, hosting sites as spatial anchors along the Columbia River and institutional repositories.</li>
+        <li><strong>Living Land Acknowledgement</strong> — Foregrounding the sovereignty, oral histories, and reburial by the five claimant tribes (Colville, Nez Perce, Umatilla, Yakama, Wanapum).</li>
+        <li><strong>3D specimen & artifact models</strong> — Procedural Three.js models of skulls, spearpoints, DNA helices, and ceremonial bundles.</li>
+        <li><strong>Multi-proxy integration</strong> — Radiocarbon dating, bioarchaeology, genetics, ritual objects, and legal histories side-by-side.</li>
+        <li><strong>Resilience narratives</strong> — Explorable scenarios for scientific tension vs. Indigenous sovereignty, legal battles, and repatriation.</li>
+        <li><strong>Readable citations</strong> — Every panel surfaces its own APA 7th reference.</li>
+    </ul>
 
+    <hr>
 
-📚 Academic References & APA 7th Citations
-Genetics: Rasmussen, M., et al. (2015). The ancestry and affiliations of Kennewick Man. Nature, 523(7561), 455–458. DOI: 10.1038/nature14625
+    <h2>What's Real vs. Placeholder</h2>
+    <table border="1" cellpadding="5" cellspacing="0">
+        <thead>
+            <tr>
+                <th>Status</th>
+                <th>Item</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>✅ Real</strong></td>
+                <td>Site names, regional contexts, and claimant tribes</td>
+            </tr>
+            <tr>
+                <td><strong>✅ Real</strong></td>
+                <td>APA 7th citations and legal/historical timeline</td>
+            </tr>
+            <tr>
+                <td><strong>✅ Real</strong></td>
+                <td>Bioarchaeological findings (healed trauma, 380+ bones)</td>
+            </tr>
+            <tr>
+                <td><strong>⚠ Partial</strong></td>
+                <td>Site coordinates (regional centroids only)</td>
+            </tr>
+            <tr>
+                <td><strong>❌ Placeholder</strong></td>
+                <td>All 3D specimen and anatomical models (generic references)</td>
+            </tr>
+            <tr>
+                <td><strong>❌ Placeholder</strong></td>
+                <td>Artifact images & diagrams (placeholders/svgs)</td>
+            </tr>
+            <tr>
+                <td><strong>❌ Placeholder</strong></td>
+                <td>Site-level descriptive text</td>
+            </tr>
+        </tbody>
+    </table>
 
-Bioarchaeology: Owsley, D. W., & Jantz, R. L. (2014). Kennewick Man: The scientific investigation of an ancient American skeleton. Texas A&M University Press.
+    <hr>
 
-Discovery & Dating: Taylor, R. E., et al. (1998). Radiocarbon dating of the Kennewick skeleton. Current Research in the Pleistocene, 15, 131–133.
+    <h2>Running Locally</h2>
+    <p>To run the interactive GIS map and 3D models locally without CORS restrictions on tile loading:</p>
+    <ol>
+        <li>Clone or download the repository.</li>
+        <li>Open a terminal in the folder and run a local web server:
+            <pre><code>python -m http.server 8000</code></pre>
+        </li>
+        <li>Open your browser and navigate to <code>http://localhost:8000</code></li>
+    </ol>
 
-Legal Framework: Native American Graves Protection and Repatriation Act (NAGPRA), 25 U.S.C. § 3001 (1990).
+    <hr>
 
-👤 Author & Creator
-Asia Khan, Hon. BA (McMaster University)
+    <h2>Ethics & Indigenous Heritage</h2>
+    <p>The sites referenced are located on the ancestral and unceded lands of Indigenous nations along the Columbia Plateau. The Ancient One was repatriated and reburied in 2017 by the Confederated Tribes of the Colville Reservation, the Nez Perce Tribe, the Confederated Tribes of the Umatilla Indian Reservation, the Confederated Tribes and Bands of the Yakama Nation, and the Wanapum People.</p>
+    <p>Any digital presentation of this heritage must be done with utmost respect, attribution, and consultation with descendant communities. This prototype strictly avoids displaying any photographs, scans, or depictions of the Ancient One's actual remains.</p>
 
-Behavioral UX Researcher & Design Anthropologist
+    <hr>
 
-Designed with respect for Indigenous sovereignty and cultural heritage.
-© All Rights Reserved.
+    <h2>Tech Stack</h2>
+    <ul>
+        <li><strong>MapLibre GL JS</strong> — satellite + terrain</li>
+        <li><strong>Esri World Imagery</strong> — free public tiles</li>
+        <li><strong>AWS Terrain DEM</strong> — elevation</li>
+        <li><strong>Three.js r128</strong> — 3D interactive models</li>
+        <li><strong>Tailwind CSS</strong> — layout & styling</li>
+        <li><strong>Google Fonts</strong> — Merriweather + Inter</li>
+    </ul>
+
+    <hr>
+
+    <h2>Credits & License</h2>
+    <ul>
+        <li><strong>Prototype</strong>: Asia Khan, Hon. BA (McMaster University)</li>
+        <li><strong>Imagery & Tiles</strong>: Esri · AWS · OpenStreetMap contributors</li>
+    </ul>
+
+    <p>© 2026 Asia Khan · All Rights Reserved.<br>
+    This prototype, including its source code, interface design, written content, and procedural 3D models, is the intellectual property of the author. No part of this work may be reproduced, distributed, modified, or transmitted in any form or by any means without prior written permission from the author.</p>
+
+    <p>The prototype is provided "as is" for demonstration and educational viewing purposes only, without warranty of any kind. Third-party libraries (MapLibre GL, Three.js, Tailwind CSS, Google Fonts, Font Awesome, Esri imagery, AWS terrain tiles) are used under their respective licenses and remain the property of their original creators.</p>
+
+</body>
+</html>
