@@ -1,6 +1,3 @@
-# Kennewick Man · The Ancient One
-### 3D GIS Heritage & Indigenous Sovereignty Portal
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
