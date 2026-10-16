@@ -42,3 +42,4 @@ Asia Khan, Hon. BA (McMaster University)
 Behavioral UX Researcher & Design Anthropologist
 
 Designed with respect for Indigenous sovereignty and cultural heritage.
+© All Rights Reserved.
