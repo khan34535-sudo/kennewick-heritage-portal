@@ -6,6 +6,7 @@ An experimental interface exploring how archaeological, bioarchaeological, and t
 
 **Asia Khan, Hon. BA** (McMaster University)  
 Behavioral UX Researcher & Design Anthropologist  
+All Rights Reserved
 
 🔗 **Live Prototype**  
 → [View the interactive prototype](https://khan34535-sudo.github.io/kennewick-heritage-portal/)  
@@ -47,9 +48,3 @@ This is a design prototype and demonstrator. It is intended to show how archaeol
 
 ---
 
-## Running Locally
-To run the interactive GIS map and 3D models locally without CORS restrictions on tile loading:
-1. Clone or download the repository.
-2. Open a terminal in the folder and run a local web server:
-   ```bash
-   python -m http.server 8000
