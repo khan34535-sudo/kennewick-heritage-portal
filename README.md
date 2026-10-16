@@ -1,4 +1,3 @@
-# kennewick-heritage-portal
 # Kennewick Man · The Ancient One
 ### 3D GIS Heritage & Indigenous Sovereignty Portal
 
@@ -26,19 +25,9 @@ An interactive digital humanities and bioarchaeological visualization engine hon
 
 ---
 
-## 🚀 Getting Started Locally
 
-To run the interactive GIS map and 3D models locally without CORS restrictions on tile loading:
 
-1. Clone the repository:
-   ```bash
-   git clone [https://github.com/your-username/kennewick-man-heritage-matrix.git](https://github.com/your-username/kennewick-man-heritage-matrix.git)
-   cd kennewick-man-heritage-matrix
-   python -m http.server 8000
-   npx http-server -p 8000
-   http://localhost:8000
-
-   📚 Academic References & APA 7th Citations
+📚 Academic References & APA 7th Citations
 Genetics: Rasmussen, M., et al. (2015). The ancestry and affiliations of Kennewick Man. Nature, 523(7561), 455–458. DOI: 10.1038/nature14625
 
 Bioarchaeology: Owsley, D. W., & Jantz, R. L. (2014). Kennewick Man: The scientific investigation of an ancient American skeleton. Texas A&M University Press.
