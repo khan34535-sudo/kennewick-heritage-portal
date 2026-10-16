@@ -1,0 +1,1404 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kennewick Man · The Ancient One · 3D GIS Heritage Matrix</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&family=Merriweather:wght@400;700;900&display=swap" rel="stylesheet">
+<link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet">
+<script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
+<script>
+tailwind.config = { darkMode:'class', theme:{ extend:{
+  colors:{
+    terracotta:{600:'#C85A32',700:'#A0431E',800:'#7E3314'},
+    forest:{600:'#2E5A44',700:'#204131',900:'#11231A'},
+    parchment:{100:'#FDFBF7',200:'#F4EFE6',800:'#2D2823',900:'#1C1917'},
+    gold:{500:'#D4AF37',600:'#AA8C2C'},
+    royalpurple:{500:'#9b30ff',600:'#7a1fd1',700:'#5c1599'},
+    neon:{cyan:'#00f0ff',purple:'#b429ff',gold:'#ffd966',amber:'#ffaa00',lime:'#00ff9d'}
+  },
+  fontFamily:{
+    sans:['Inter','Rajdhani','sans-serif'],
+    display:['Orbitron','sans-serif'],
+    serif:['Merriweather','serif'],
+    mono:['Share Tech Mono','monospace']
+  }
+}}}
+</script>
+<style>
+body{
+  font-family:'Inter',sans-serif;
+  background:#0b1711;
+  color:#F4EFE6;
+  overflow-x:hidden;
+  position:relative;
+  font-size:14px;
+  line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+}
+body::before{
+  content:'';
+  position:fixed;
+  inset:0;
+  background-image:
+    linear-gradient(rgba(212,175,55,.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(200,90,50,.025) 1px, transparent 1px);
+  background-size:48px 48px;
+  pointer-events:none;
+  z-index:0;
+  animation:gridShift 60s linear infinite;
+}
+@keyframes gridShift{
+  0%{ background-position:0 0, 0 0; }
+  100%{ background-position:48px 48px, 48px 48px; }
+}
+.glass-panel{
+  background:rgba(22,38,29,.9);
+  backdrop-filter:blur(14px) saturate(1.3);
+  border:1px solid rgba(212,175,55,.25);
+  position:relative;
+  box-shadow:0 4px 24px rgba(0,0,0,.55), inset 0 1px 0 rgba(244,239,230,.05);
+}
+.glass-card{
+  background:rgba(35,52,42,.82);
+  backdrop-filter:blur(10px);
+  border:1px solid rgba(200,90,50,.32);
+  box-shadow:0 4px 18px rgba(0,0,0,.5);
+}
+h1, h2, h3, .font-serif{
+  font-family:'Merriweather','Inter',serif;
+  letter-spacing:.02em;
+  font-weight:700;
+}
+::-webkit-scrollbar{ width:8px; }
+::-webkit-scrollbar-track{ background:#0b1711; }
+::-webkit-scrollbar-thumb{ background:#C85A32; border-radius:4px; }
+canvas{ display:block; outline:none; }
+.corner-badge{ position:fixed; bottom:16px; right:16px; z-index:80; }
+#artifact-container,#specimen-container,#ritual-container,#bioarch-container{ min-height:500px; }
+#gis-map{ position:absolute; inset:0; width:100%; height:100%; background:#0a1210; }
+.star-beacon{
+  position:relative; width:44px; height:44px; cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  transition:transform .25s ease;
+  filter:drop-shadow(0 0 8px rgba(212,175,55,.7)) drop-shadow(0 0 16px rgba(200,90,50,.5));
+  animation:starPulse 2.8s ease-in-out infinite;
+}
+.star-beacon svg{ width:44px; height:44px; display:block; }
+.star-beacon .star-core{ fill:url(#starGradient); stroke:#FDFBF7; stroke-width:1.2; }
+.star-beacon:hover{ transform:scale(1.28) rotate(6deg); filter:drop-shadow(0 0 14px #D4AF37) drop-shadow(0 0 28px #C85A32); }
+.star-beacon .sparkle{
+  position:absolute; top:-6px; right:-6px; width:10px; height:10px;
+  background:#D4AF37; border-radius:50%;
+  box-shadow:0 0 8px #D4AF37, 0 0 16px #C85A32;
+  animation:sparkleSpin 4s linear infinite;
+}
+@keyframes starPulse{
+  0%,100%{ filter:drop-shadow(0 0 6px rgba(212,175,55,.6)) drop-shadow(0 0 14px rgba(200,90,50,.4)); opacity:1; }
+  50%{ filter:drop-shadow(0 0 14px rgba(212,175,55,.9)) drop-shadow(0 0 26px rgba(200,90,50,.6)); opacity:.94; }
+}
+@keyframes sparkleSpin{
+  0%{ transform:rotate(0deg) translateX(0); }
+  50%{ transform:rotate(180deg) translateX(3px); }
+  100%{ transform:rotate(360deg) translateX(0); }
+}
+.user-pin-pulse{ animation:userPinPulse 1.5s ease-out infinite; }
+@keyframes userPinPulse{
+  0%{ box-shadow:0 0 0 0 rgba(212,175,55,.8); }
+  100%{ box-shadow:0 0 0 24px rgba(212,175,55,0); }
+}
+.site-popup .maplibregl-popup-content{
+  background:rgba(22,38,29,.98)!important;
+  border:1px solid rgba(212,175,55,.55)!important;
+  border-radius:8px!important;
+  padding:16px 18px!important;
+  box-shadow:0 10px 40px rgba(0,0,0,.75)!important;
+  backdrop-filter:blur(12px);
+  font-family:'Inter',sans-serif;
+  font-size:12px;
+}
+.site-popup .maplibregl-popup-tip{
+  border-top-color:rgba(22,38,29,.98)!important;
+  border-bottom-color:rgba(22,38,29,.98)!important;
+}
+.site-popup .maplibregl-popup-close-button{ color:#D4AF37!important; font-size:20px!important; padding:2px 10px!important; background:transparent!important; }
+.site-popup .maplibregl-popup-close-button:hover{ background:rgba(212,175,55,.2)!important; }
+.nav-btn-warm{
+  font-family:'Inter',sans-serif; font-weight:500; letter-spacing:.02em;
+  transition:all .25s ease;
+}
+.aerial-active{
+  background:linear-gradient(90deg, #C85A32, #D4AF37)!important;
+  color:#1C1917!important; font-weight:700;
+  box-shadow:0 0 16px rgba(200,90,50,.5), 0 0 28px rgba(212,175,55,.35);
+}
+.text-xs{ font-size:13px !important; line-height:1.6 !important; }
+.text-[10px]{ font-size:11.5px !important; line-height:1.55 !important; }
+.text-[11px]{ font-size:12.5px !important; line-height:1.55 !important; }
+.text-[9px]{ font-size:11px !important; line-height:1.5 !important; }
+.text-[9.5px]{ font-size:11px !important; line-height:1.5 !important; }
+.text-sm{ font-size:15px !important; line-height:1.5 !important; }
+.text-base{ font-size:17px !important; line-height:1.45 !important; }
+.text-lg{ font-size:19px !important; line-height:1.4 !important; }
+#gis-site-desc,#gis-site-context,#gis-site-method,#gis-site-directors,#gis-site-apa{
+  color:#F4EFE6 !important; font-size:13px !important; line-height:1.65 !important;
+}
+#gis-site-flora li,#gis-site-artifacts li{
+  color:#F4EFE6 !important; font-size:13px !important; line-height:1.6 !important;
+  padding-top:2px; padding-bottom:2px;
+}
+#gis-site-apa, #artifact-apa, #specimen-apa, #ritual-apa, #bioarch-apa, #scenario-apa{
+  color:#FDFBF7 !important; font-size:12.5px !important; line-height:1.65 !important;
+}
+#artifact-details div p,#specimen-details div p,#ritual-details div p,#bioarch-details div p{
+  color:#F4EFE6 !important; font-size:13px !important; line-height:1.6 !important;
+}
+
+/* Reconstruction face ethical disclaimer */
+.reconstruction-disclaimer{
+  background:rgba(160,67,30,.15);
+  border-left:4px solid #C85A32;
+  border-radius:8px;
+  padding:14px 18px;
+  margin-top:14px;
+}
+.reconstruction-disclaimer strong{ color:#D4AF37; }
+
+/* Holographic container */
+#holo-skeleton-container{
+  position:relative; width:100%; height:520px;
+  border-radius:16px; overflow:hidden;
+  background:
+    radial-gradient(ellipse at 50% 50%, rgba(200,90,50,.15) 0%, rgba(11,23,17,.95) 70%),
+    repeating-linear-gradient(0deg, rgba(212,175,55,.03) 0px, rgba(212,175,55,.03) 1px, transparent 1px, transparent 3px);
+  border:1px solid rgba(212,175,55,.35);
+  box-shadow:inset 0 0 80px rgba(200,90,50,.15), 0 12px 40px rgba(0,0,0,.5);
+  cursor:grab;
+}
+#holo-skeleton-container:active{ cursor:grabbing; }
+#holo-skeleton-container::after{
+  content:''; position:absolute;
+  left:0; right:0; height:2px;
+  background:linear-gradient(90deg, transparent, rgba(212,175,55,.7), transparent);
+  animation:scanline 6s linear infinite;
+  pointer-events:none; z-index:2;
+}
+@keyframes scanline{ 0%{ top:0; } 100%{ top:100%; } }
+#holo-skeleton-container canvas{ position:relative; z-index:3; }
+</style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <linearGradient id="starGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FDFBF7"/>
+      <stop offset="35%" stop-color="#D4AF37"/>
+      <stop offset="70%" stop-color="#C85A32"/>
+      <stop offset="100%" stop-color="#7E3314"/>
+    </linearGradient>
+  </defs>
+</svg>
+
+<!-- TOP BANNER -->
+<div class="relative z-[70] bg-gradient-to-r from-terracotta-800 via-terracotta-700 to-forest-700 text-parchment-100 text-xs py-2.5 px-4 text-center font-medium border-b border-gold-500/40 shadow-md flex flex-wrap items-center justify-center gap-2">
+  <span class="bg-gold-500 text-parchment-900 px-2.5 py-1 rounded text-[10px] font-bold tracking-wider uppercase">◈ Prototype Sample</span>
+  <span class="hidden md:inline text-gold-500/80">◆</span>
+  <span>Asia Khan, Hon. BA (McMaster University)</span>
+  <span class="hidden md:inline text-gold-500/80">◆</span>
+  <span class="text-gold-500 italic">Behavioral UX Researcher and Design Anthropologist</span>
+</div>
+
+<!-- HEADER -->
+<header class="glass-panel sticky top-[36px] z-50 px-6 py-4 flex flex-wrap justify-between items-center border-b border-gold-500/30">
+  <div class="flex items-center space-x-3">
+    <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-terracotta-600 to-gold-600 flex items-center justify-center shadow-lg">
+      <i class="fa-solid fa-feather-pointed text-parchment-100 text-lg"></i>
+    </div>
+    <div>
+      <h1 class="font-serif font-bold text-base md:text-lg text-parchment-100 flex items-center gap-2">
+        Kennewick Man · The Ancient One
+        <span class="text-xs bg-terracotta-700/80 text-gold-500 px-2 py-0.5 rounded-full border border-gold-500/30">8,500 BP · Columbia River</span>
+      </h1>
+      <p class="text-xs text-parchment-200/70">Discovery · GIS · Reconstruction · DNA · Religion &amp; Culture · Significance</p>
+    </div>
+  </div>
+  <nav class="flex flex-wrap items-center gap-2 mt-3 md:mt-0 text-xs">
+    <button onclick="switchTab('gis')" id="nav-gis" class="nav-btn-warm px-3 py-2 rounded-lg bg-terracotta-600 text-parchment-100 font-medium shadow-md transition-all"><i class="fa-solid fa-globe-americas"></i> 3D Aerial GIS</button>
+    <button onclick="switchTab('discovery')" id="nav-discovery" class="nav-btn-warm px-3 py-2 rounded-lg bg-parchment-800/80 hover:bg-parchment-800 text-parchment-200 transition-all"><i class="fa-solid fa-magnifying-glass text-gold-500"></i> Discovery</button>
+    <button onclick="switchTab('reconstruction')" id="nav-reconstruction" class="nav-btn-warm px-3 py-2 rounded-lg bg-parchment-800/80 hover:bg-parchment-800 text-parchment-200 transition-all"><i class="fa-solid fa-user text-gold-500"></i> Reconstruction</button>
+    <button onclick="switchTab('artifact')" id="nav-artifact" class="nav-btn-warm px-3 py-2 rounded-lg bg-parchment-800/80 hover:bg-parchment-800 text-parchment-200 transition-all"><i class="fa-solid fa-bone text-gold-500"></i> 3D Diagram</button>
+    <button onclick="switchTab('dna')" id="nav-dna" class="nav-btn-warm px-3 py-2 rounded-lg bg-parchment-800/80 hover:bg-parchment-800 text-parchment-200 transition-all"><i class="fa-solid fa-dna text-gold-500"></i> DNA &amp; Origin</button>
+    <button onclick="switchTab('ritual')" id="nav-ritual" class="nav-btn-warm px-3 py-2 rounded-lg bg-parchment-800/80 hover:bg-parchment-800 text-parchment-200 transition-all"><i class="fa-solid fa-hands-praying text-gold-500"></i> Religion &amp; Culture</button>
+    <button onclick="switchTab('significance')" id="nav-significance" class="nav-btn-warm px-3 py-2 rounded-lg bg-parchment-800/80 hover:bg-parchment-800 text-parchment-200 transition-all"><i class="fa-solid fa-scroll text-gold-500"></i> Significance</button>
+  </nav>
+</header>
+
+<main class="flex-1 relative flex flex-col p-4 md:p-6 max-w-7xl mx-auto w-full z-10">
+
+<!-- ============ TAB: GIS ============ -->
+<section id="tab-gis" class="flex-1 flex flex-col space-y-4">
+  <div class="glass-panel p-4 rounded-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+    <div>
+      <h2 class="text-lg font-serif font-semibold text-gold-500 flex items-center gap-2"><i class="fa-solid fa-map-location-dot"></i> Columbia River GIS · Kennewick, WA</h2>
+      <p class="text-xs text-parchment-200/80">3D aerial view with real elevation. Click any gold star for site summaries with APA references. The Ancient One was found on the banks of the Columbia River.</p>
+    </div>
+    <div class="flex gap-2 flex-wrap items-center">
+      <span class="text-xs text-parchment-200/70 flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-gold-500 inline-block animate-ping"></span> Active Node</span>
+      <button onclick="locateMe()" id="locate-btn" class="px-3 py-1.5 bg-gold-600 hover:bg-gold-500 text-xs rounded-lg border border-gold-500/40 text-parchment-900 font-semibold transition-all"><i class="fa-solid fa-location-crosshairs"></i> Find Me</button>
+      <button onclick="toggleFlyover()" id="flyover-btn" class="px-3 py-1.5 bg-forest-600 hover:bg-forest-700 text-xs rounded-lg border border-gold-500/30 text-parchment-100">Flyover</button>
+      <button onclick="toggleTilt()" id="tilt-btn" class="px-3 py-1.5 bg-forest-600 hover:bg-forest-700 text-xs rounded-lg border border-gold-500/30 text-parchment-100">3D Tilt</button>
+      <button onclick="resetGlobeCamera()" class="px-3 py-1.5 bg-forest-600 hover:bg-forest-700 text-xs rounded-lg border border-gold-500/30 text-parchment-100">Reset View</button>
+    </div>
+  </div>
+  <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 flex-1">
+    <div class="lg:col-span-3 glass-panel rounded-2xl relative overflow-hidden border border-gold-500/20 shadow-2xl" style="min-height:520px">
+      <div id="gis-map" style="position:absolute;inset:0"></div>
+      <div class="absolute bottom-4 left-4 glass-card px-4 py-2 rounded-xl text-xs pointer-events-none border border-gold-500/20 z-10">
+        <i class="fa-solid fa-circle-info text-gold-500"></i> Drag to pan · Scroll to zoom · Right-drag to tilt · Click ★
+      </div>
+    </div>
+    <div class="glass-panel p-5 rounded-2xl flex flex-col justify-between border border-gold-500/20">
+      <div>
+        <div class="flex items-center justify-between pb-3 border-b border-parchment-200/10">
+          <h3 id="gis-site-title" class="font-serif font-bold text-gold-500 text-base">Select Site Node</h3>
+          <span id="gis-site-culture" class="hex-badge">Region</span>
+        </div>
+        <div class="mt-4 space-y-3 text-xs">
+          <p id="gis-site-desc" class="text-parchment-200/95 leading-relaxed">Click a star on the map. The primary node is the discovery site at Columbia Park, Kennewick, WA.</p>
+          <div class="bg-[#11231A]/80 p-3 rounded-xl border border-parchment-200/10">
+            <span class="font-semibold text-gold-500 block mb-1">Excavation Context:</span>
+            <p id="gis-site-context" class="text-parchment-200/90 leading-relaxed"></p>
+          </div>
+          <div class="bg-[#11231A]/80 p-3 rounded-xl border border-parchment-200/10">
+            <span class="font-semibold text-gold-500 block mb-1">Artifact Types Analyzed:</span>
+            <ul id="gis-site-artifacts" class="list-disc list-inside space-y-1 text-parchment-200/90"></ul>
+          </div>
+          <div class="bg-[#11231A]/80 p-3 rounded-xl border border-parchment-200/10">
+            <span class="font-semibold text-gold-500 block mb-1">Key Botanical / Bone Remains:</span>
+            <ul id="gis-site-flora" class="list-disc list-inside space-y-1 text-parchment-200/90"></ul>
+          </div>
+          <div class="bg-[#11231A]/80 p-3 rounded-xl border border-parchment-200/10">
+            <span class="font-semibold text-gold-500 block mb-1">Method:</span>
+            <p id="gis-site-method" class="text-parchment-200/90"></p>
+          </div>
+          <div class="bg-[#11231A]/80 p-3 rounded-xl border border-parchment-200/10">
+            <span class="font-semibold text-gold-500 block mb-1">Project Directors &amp; Analysis:</span>
+            <p id="gis-site-directors" class="text-parchment-200/90 leading-relaxed"></p>
+          </div>
+          <div class="bg-[#11231A]/80 p-3 rounded-xl border border-gold-500/40">
+            <span class="font-semibold text-gold-500 block mb-1 flex items-center gap-1"><i class="fa-solid fa-book"></i> APA 7th:</span>
+            <p id="gis-site-apa" class="text-parchment-200/95 leading-relaxed text-[12.5px]"></p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ TAB: DISCOVERY ============ -->
+<section id="tab-discovery" class="flex-1 hidden flex-col space-y-4">
+  <div class="glass-panel p-4 rounded-2xl">
+    <h2 class="text-lg font-serif font-semibold text-gold-500 flex items-center gap-2"><i class="fa-solid fa-magnifying-glass"></i> Discovery · Who, What, Where, When, How</h2>
+    <p class="text-xs text-parchment-200/80 mb-3">The 1996 discovery of the Ancient One on the Columbia River.</p>
+  </div>
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="lg:col-span-2 glass-panel p-6 rounded-2xl border border-gold-500/20">
+      <h3 class="font-serif font-bold text-gold-500 text-lg mb-3">The Find</h3>
+      <p class="text-xs text-parchment-200/95 leading-relaxed mb-4">
+        <strong>Who:</strong> Two college students, Will Thomas and Dave Deacy, were sneaking into hydroplane races along the Columbia River near Kennewick, Washington, when they noticed a human skull in the mud.<br><br>
+        <strong>What:</strong> A nearly complete skeleton — one of the oldest and most complete ever found in North America, comprising more than <strong>380 bones and bone fragments</strong>.<br><br>
+        <strong>Where:</strong> The shallows of the Columbia River, near Kennewick, Washington, on land managed by the US Army Corps of Engineers (Columbia Park).<br><br>
+        <strong>When:</strong> Discovered on July 28, 1996. Radiocarbon dating placed the skeleton at approximately <strong>8,500 years old</strong> (8,340–9,200 calibrated years BP).<br><br>
+        <strong>How:</strong> The initial find was treated as a possible murder. A local forensic anthropologist, James Chatters, recovered the skeleton and discovered a <strong>stone spearpoint (Cascade point) embedded in the hip</strong>. Radiocarbon dating revealed its great antiquity, sparking a legal and cultural firestorm.
+      </p>
+      <div class="grid grid-cols-3 gap-3">
+        <div class="bg-[#11231A]/80 p-3 rounded-xl border border-gold-500/20 text-center">
+          <div class="text-2xl mb-1">🦴</div>
+          <div class="text-xs text-parchment-200/90 font-semibold">380+ bones</div>
+        </div>
+        <div class="bg-[#11231A]/80 p-3 rounded-xl border border-gold-500/20 text-center">
+          <div class="text-2xl mb-1">🏞️</div>
+          <div class="text-xs text-parchment-200/90 font-semibold">Columbia River</div>
+        </div>
+        <div class="bg-[#11231A]/80 p-3 rounded-xl border border-gold-500/20 text-center">
+          <div class="text-2xl mb-1">📅</div>
+          <div class="text-xs text-parchment-200/90 font-semibold">1996 · 8,500 BP</div>
+        </div>
+      </div>
+    </div>
+    <div class="glass-panel p-5 rounded-2xl border border-gold-500/20">
+      <h3 class="font-serif font-bold text-gold-500 text-base mb-3">Radiocarbon Dating</h3>
+      <p class="text-xs text-parchment-200/95 leading-relaxed mb-3">
+        Radiocarbon dating of a bone sample was performed at the University of California, Riverside. The results placed the skeleton at <strong>8,340–9,200 calibrated years before present</strong>, making it one of the oldest and most complete skeletons in the Americas.
+      </p>
+      <div class="bg-[#11231A]/80 p-3 rounded-xl border border-gold-500/40">
+        <span class="font-semibold text-gold-500 block mb-1 text-xs flex items-center gap-1"><i class="fa-solid fa-book"></i> APA 7th:</span>
+        <p class="text-parchment-200/95 leading-relaxed text-[12px]">
+          Taylor, R. E., Kirner, D. L., Southon, J. R., &amp; Chatters, J. C. (1998). Radiocarbon dating of the Kennewick skeleton. <em>Current Research in the Pleistocene</em>, <em>15</em>, 131–133.<br><br>
+          Chatters, J. C. (2001). <em>Ancient encounters: Kennewick Man and the first Americans</em>. Simon &amp; Schuster.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ TAB: RECONSTRUCTION ============ -->
+<section id="tab-reconstruction" class="flex-1 hidden flex-col space-y-4">
+  <div class="glass-panel p-4 rounded-2xl">
+    <h2 class="text-lg font-serif font-semibold text-gold-500 flex items-center gap-2"><i class="fa-solid fa-user"></i> Forensic Reconstruction · Artist's Interpretation</h2>
+    <p class="text-xs text-parchment-200/80 mb-3">StudioEIS reconstruction of the Ancient One's face, based on forensic analysis of the skull.</p>
+  </div>
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="lg:col-span-2 glass-panel p-6 rounded-2xl border border-gold-500/20">
+      <figure style="position:relative; border-radius:16px; overflow:hidden; border:1px solid rgba(212,175,55,.3); background:rgba(11,23,17,.6);">
+        <img src="aa.png"
+             alt="Forensic facial reconstruction of The Ancient One by StudioEIS. Artist's interpretation based on osteological analysis — not a photograph."
+             loading="lazy"
+             onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 800 700%22><defs><radialGradient id=%22bg%22 cx=%2250%25%22 cy=%2250%25%22><stop offset=%220%25%22 stop-color=%22%231A2E22%22/><stop offset=%22100%25%22 stop-color=%22%230B1711%22/></radialGradient></defs><rect width=%22800%22 height=%22700%22 fill=%22url(%23bg)%22/><g fill=%22none%22 stroke=%22%23D4AF37%22 stroke-width=%221.5%22 opacity=%22.9%22 transform=%22translate(400,320)%22><ellipse cx=%220%22 cy=%220%22 rx=%22130%22 ry=%22170%22/><path d=%22M-130 0 Q0 -60 130 0%22/><path d=%22M-90 60 Q0 200 90 60%22/><ellipse cx=%22-45%22 cy=%2220%22 rx=%2222%22 ry=%2226%22 fill=%22%230B1711%22/><ellipse cx=%2245%22 cy=%2220%22 rx=%2222%22 ry=%2226%22 fill=%22%230B1711%22/><path d=%22M-12 60 L0 120 L12 60%22/><path d=%22M-70 170 Q0 250 70 170%22/><path d=%22M-60 220 Q0 290 60 220%22/><path d=%22M-50 260 Q0 310 50 260%22/></g><text x=%22400%22 y=%22590%22 text-anchor=%22middle%22 fill=%22%23D4AF37%22 font-family=%22Merriweather%22 font-size=%2222%22 font-weight=%22700%22>Forensic Reconstruction</text><text x=%22400%22 y=%22620%22 text-anchor=%22middle%22 fill=%22%23F4EFE6%22 font-family=%22Inter%22 font-size=%2213%22>Artist&apos;s interpretation — not a photograph</text><text x=%22400%22 y=%22648%22 text-anchor=%22middle%22 fill=%22%23AA8C2C%22 font-family=%22Inter%22 font-size=%2212%22>Save your image as aa.png</text></svg>'">
+        <figcaption style="background:rgba(11,23,17,.92); padding:14px 18px; font-size:12px; color:#D4AF37; line-height:1.55; border-top:1px solid rgba(212,175,55,.25);">
+          <strong style="color:#FDFBF7;">Forensic facial reconstruction</strong> of The Ancient One by StudioEIS.
+          Sculpted bust by StudioEIS, based on forensic facial reconstruction by sculptor Amanda Danning.
+          Photo by Brittney Tatchell, Smithsonian Institution.
+          <br><span style="color:#D4AF37; font-size:11px;">→ Save your image as <code style="color:#D4AF37;">aa.png</code></span>
+        </figcaption>
+      </figure>
+
+      <div class="reconstruction-disclaimer">
+        <p class="text-xs text-parchment-200/95 leading-relaxed">
+          <strong>Please note:</strong> This reconstruction is an <em>artist's interpretation</em> based on forensic analysis of the skull — it is not a photograph and it is not the Ancient One's actual face. Some tribal members do not accept any reconstruction, out of respect for the Ancestor's reburial in 2017. This image is presented for educational purposes only.
+        </p>
+      </div>
+    </div>
+
+    <div class="glass-panel p-5 rounded-2xl border border-gold-500/20">
+      <h3 class="font-serif font-bold text-gold-500 text-base mb-3">About the Reconstruction</h3>
+      <p class="text-xs text-parchment-200/95 leading-relaxed mb-3">
+        The reconstruction was created using CT scans and osteological measurements of the Ancient One's skull. Soft tissue depth data from modern reference populations were applied to estimate the shape of the face.
+      </p>
+      <p class="text-xs text-parchment-200/95 leading-relaxed mb-3">
+        The sculpture stands about 5'8" tall (1.73 m) — the estimated height of the Ancient One based on femur length. He weighed approximately 70–75 kg.
+      </p>
+      <div class="bg-[#11231A]/80 p-3 rounded-xl border border-gold-500/40">
+        <span class="font-semibold text-gold-500 block mb-1 text-xs flex items-center gap-1"><i class="fa-solid fa-book"></i> APA 7th:</span>
+        <p class="text-parchment-200/95 leading-relaxed text-[12px]">
+          Owsley, D. W., &amp; Jantz, R. L. (2014). <em>Kennewick Man: The scientific investigation of an ancient American skeleton</em>. Texas A&amp;M University Press.<br><br>
+          Smithsonian Institution. (2014). <em>Kennewick Man: The scientific investigation</em>. National Museum of Natural History.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ TAB: ARTIFACT / 3D OSTEOLOGICAL DIAGRAM ============ -->
+<section id="tab-artifact" class="flex-1 hidden flex-col space-y-4">
+  <div class="glass-panel p-4 rounded-2xl">
+    <h2 class="text-lg font-serif font-semibold text-gold-500 flex items-center gap-2"><i class="fa-solid fa-bone"></i> 3D Osteological Diagram · The Ancient One</h2>
+    <p class="text-xs text-parchment-200/80 mb-3">Interactive 3D anatomical plate. Click any bone to learn about the Ancient One's life, injuries, and resilience.</p>
+    <div class="flex flex-wrap gap-2 mt-2">
+      <button onclick="toggleHoloAutoRotate()" id="holo-rotate-btn" class="nav-btn-warm px-3 py-1.5 bg-forest-600 hover:bg-forest-700 text-xs rounded-lg border border-gold-500/30 text-parchment-100">
+        <i class="fa-solid fa-rotate"></i> Pause Rotation
+      </button>
+      <button onclick="resetHoloView()" class="nav-btn-warm px-3 py-1.5 bg-forest-600 hover:bg-forest-700 text-xs rounded-lg border border-gold-500/30 text-parchment-100">
+        <i class="fa-solid fa-house"></i> Reset View
+      </button>
+    </div>
+  </div>
+  <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 flex-1">
+    <div class="lg:col-span-3 glass-panel rounded-2xl relative overflow-hidden border border-gold-500/20 shadow-2xl" style="min-height:520px; padding:8px;">
+      <div id="holo-skeleton-container" style="position:relative; width:100%; height:100%; min-height:500px;">
+        <div id="holo-skeleton" style="position:absolute; inset:0;"></div>
+        <div class="absolute top-4 left-4 glass-card px-3 py-1.5 rounded-xl text-xs text-gold-500 font-semibold border border-gold-500/30 z-10">
+          <i class="fa-solid fa-cube"></i> 3D Osteological Diagram
+        </div>
+      </div>
+    </div>
+    <div class="glass-panel p-5 rounded-2xl border border-gold-500/20">
+      <div class="flex items-center justify-between pb-3 border-b border-parchment-200/10">
+        <h3 id="bone-panel-title" class="font-serif font-bold text-gold-500 text-base">Select a Bone</h3>
+        <span class="hex-badge">Interactive</span>
+      </div>
+      <p id="bone-panel-desc" class="mt-4 text-xs text-parchment-200/95 leading-relaxed">
+        Click on any bone in the 3D holographic diagram to learn about the Ancient One's life, injuries, and story.
+      </p>
+      <div id="bone-panel-details" class="mt-3 space-y-2 text-xs"></div>
+      <div id="bone-panel-apa-wrap" class="mt-3 bg-[#11231A]/80 p-3 rounded-xl border border-gold-500/40 hidden">
+        <span class="font-semibold text-gold-500 block mb-1 text-xs flex items-center gap-1"><i class="fa-solid fa-book"></i> APA 7th:</span>
+        <p id="bone-panel-apa" class="text-parchment-200/95 leading-relaxed text-[12px]"></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ TAB: DNA ============ -->
+<section id="tab-dna" class="flex-1 hidden flex-col space-y-4">
+  <div class="glass-panel p-4 rounded-2xl">
+    <h2 class="text-lg font-serif font-semibold text-gold-500 flex items-center gap-2"><i class="fa-solid fa-dna"></i> DNA &amp; Origin · Genome Reveals Truth</h2>
+    <p class="text-xs text-parchment-200/80 mb-3">3D molecular models and genome analysis of the Ancient One.</p>
+    <div id="dna-buttons" class="flex flex-wrap gap-2"></div>
+  </div>
+  <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 flex-1">
+    <div class="lg:col-span-3 glass-panel rounded-2xl relative overflow-hidden border border-gold-500/20 shadow-2xl" style="min-height:520px">
+      <div id="dna-container" class="absolute inset-0 cursor-grab active:cursor-grabbing" style="width:100%;height:100%"></div>
+      <div class="absolute top-4 left-4 glass-card px-3 py-1.5 rounded-xl text-xs text-gold-500 font-semibold border border-gold-500/30 z-10"><i class="fa-solid fa-dna"></i> <span id="dna-view-title">3D Viewer</span></div>
+    </div>
+    <div class="glass-panel p-5 rounded-2xl border border-gold-500/20">
+      <div class="flex items-center justify-between pb-3 border-b border-parchment-200/10">
+        <h3 id="dna-title" class="font-serif font-bold text-gold-500 text-base">—</h3>
+        <span id="dna-category" class="hex-badge">—</span>
+      </div>
+      <p id="dna-desc" class="mt-4 text-xs text-parchment-200/95 leading-relaxed"></p>
+      <div id="dna-details" class="mt-3 space-y-2 text-xs"></div>
+      <div class="mt-3 bg-[#11231A]/80 p-3 rounded-xl border border-gold-500/40">
+        <span class="font-semibold text-gold-500 block mb-1 text-xs flex items-center gap-1"><i class="fa-solid fa-book"></i> APA 7th:</span>
+        <p id="dna-apa" class="text-parchment-200/95 leading-relaxed text-[12.5px]"></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ TAB: RITUAL / RELIGION ============ -->
+<section id="tab-ritual" class="flex-1 hidden flex-col space-y-4">
+  <div class="glass-panel p-4 rounded-2xl">
+    <h2 class="text-lg font-serif font-semibold text-gold-500 flex items-center gap-2"><i class="fa-solid fa-hands-praying"></i> Religion &amp; Culture · Sacred &amp; Sovereign</h2>
+    <p class="text-xs text-parchment-200/80 mb-3">Sacred objects, reburial, oral history, and the spiritual relationship to the Ancient One.</p>
+    <div id="ritual-buttons" class="flex flex-wrap gap-2"></div>
+  </div>
+  <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 flex-1">
+    <div class="lg:col-span-3 glass-panel rounded-2xl relative overflow-hidden border border-gold-500/20 shadow-2xl" style="min-height:520px">
+      <div id="ritual-container" class="absolute inset-0 cursor-grab active:cursor-grabbing" style="width:100%;height:100%"></div>
+      <div class="absolute top-4 left-4 glass-card px-3 py-1.5 rounded-xl text-xs text-gold-500 font-semibold border border-gold-500/30 z-10"><i class="fa-solid fa-star"></i> <span id="ritual-view-title">3D Viewer</span></div>
+    </div>
+    <div class="glass-panel p-5 rounded-2xl border border-gold-500/20">
+      <div class="flex items-center justify-between pb-3 border-b border-parchment-200/10">
+        <h3 id="ritual-title" class="font-serif font-bold text-gold-500 text-base">—</h3>
+        <span id="ritual-category" class="hex-badge">—</span>
+      </div>
+      <p id="ritual-desc" class="mt-4 text-xs text-parchment-200/95 leading-relaxed"></p>
+      <div id="ritual-details" class="mt-3 space-y-2 text-xs"></div>
+      <div class="mt-3 bg-[#11231A]/80 p-3 rounded-xl border border-gold-500/40">
+        <span class="font-semibold text-gold-500 block mb-1 text-xs flex items-center gap-1"><i class="fa-solid fa-book"></i> APA 7th:</span>
+        <p id="ritual-apa" class="text-parchment-200/95 leading-relaxed text-[12.5px]"></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ TAB: SIGNIFICANCE ============ -->
+<section id="tab-significance" class="flex-1 hidden flex-col space-y-4">
+  <div class="glass-panel p-4 rounded-2xl">
+    <h2 class="text-lg font-serif font-semibold text-gold-500 flex items-center gap-2"><i class="fa-solid fa-scroll"></i> Significance · History, Law, Legacy</h2>
+    <p class="text-xs text-parchment-200/80 mb-3">The legal battle, media attention, and enduring legacy of the Ancient One.</p>
+  </div>
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="lg:col-span-2 glass-panel p-6 rounded-2xl border border-gold-500/20">
+      <h3 class="font-serif font-bold text-gold-500 text-lg mb-3">Legal Timeline</h3>
+      <ul class="text-xs text-parchment-200/95 leading-relaxed space-y-2 list-disc list-inside">
+        <li><strong>1996:</strong> Discovery. Tribes claim him under NAGPRA (Native American Graves Protection and Repatriation Act).</li>
+        <li><strong>1996–2004:</strong> Eight scientists sue the government for the right to study the remains. Courts rule NAGPRA does not apply because "cultural affiliation" was not established.</li>
+        <li><strong>2005–2006:</strong> Scientists study the bones at the Burke Museum.</li>
+        <li><strong>2015:</strong> Genome sequencing proves Native American ancestry.</li>
+        <li><strong>2016:</strong> US government determines the Ancient One is Native American; repatriation begins.</li>
+        <li><strong>2017:</strong> Reburial by the five claimant tribes.</li>
+      </ul>
+      <blockquote class="mt-4 bg-[#11231A]/80 p-4 rounded-xl border-l-4 border-gold-500 italic text-xs text-parchment-200/90">
+        "The reason we can come to these conclusions is because the skeleton was kept for science... But the conclusions show that he was Native American in the first place." — Eske Willerslev
+      </blockquote>
+      <h3 class="font-serif font-bold text-gold-500 text-lg mt-6 mb-3">Media &amp; Public Attention</h3>
+      <p class="text-xs text-parchment-200/95 leading-relaxed mb-3">
+        The discovery of the Ancient One drew international media attention. Documentaries, news articles, and social media discussions have explored the tension between scientific research and Indigenous sovereignty. The case became a landmark in the movement for repatriation of ancestral remains.
+      </p>
+      <div class="space-y-2">
+        <div class="bg-[#11231A]/80 p-3 rounded-xl border border-gold-500/20">
+          <span class="text-gold-500 text-xs font-semibold"><i class="fa-brands fa-youtube"></i> YouTube:</span>
+          <span class="text-xs text-parchment-200/90">Search "Kennewick Man documentary" — numerous educational videos explore the discovery, legal battle, and reburial.</span>
+        </div>
+        <div class="bg-[#11231A]/80 p-3 rounded-xl border border-gold-500/20">
+          <span class="text-gold-500 text-xs font-semibold"><i class="fa-solid fa-newspaper"></i> Headlines:</span>
+          <span class="text-xs text-parchment-200/90">"Mystery solved: 8500-year-old Kennewick Man is a Native American after all" (Science, 2021)</span>
+        </div>
+      </div>
+    </div>
+    <div class="glass-panel p-5 rounded-2xl border border-gold-500/20">
+      <h3 class="font-serif font-bold text-gold-500 text-base mb-3">Key Figures</h3>
+      <ul class="text-xs text-parchment-200/95 space-y-2">
+        <li><strong>Will Thomas &amp; Dave Deacy</strong> — Discoverers (1996)</li>
+        <li><strong>James Chatters</strong> — Forensic anthropologist who first examined the skeleton</li>
+        <li><strong>Dr. Douglas Owsley</strong> — Smithsonian bioarchaeologist who led the scientific study</li>
+        <li><strong>Dr. Eske Willerslev</strong> — Geneticist who sequenced the genome (2015)</li>
+        <li><strong>Five Claimant Tribes</strong> — Colville, Nez Perce, Umatilla, Yakama, Wanapum</li>
+      </ul>
+      <div class="mt-4 bg-[#11231A]/80 p-3 rounded-xl border border-gold-500/40">
+        <span class="font-semibold text-gold-500 block mb-1 text-xs flex items-center gap-1"><i class="fa-solid fa-book"></i> APA 7th:</span>
+        <p class="text-parchment-200/95 leading-relaxed text-[12px]">
+          Bureau of Indian Affairs. (2000). <em>Interior Department determines "Kennewick Man" remains to go to five Indian tribes</em>. U.S. Department of the Interior.<br><br>
+          Burke Museum. (n.d.). <em>Kennewick Man: The scientific investigation</em>. University of Washington.<br><br>
+          Native American Graves Protection and Repatriation Act (NAGPRA), 25 U.S.C. § 3001 (1990).<br><br>
+          Owsley, D. W., &amp; Jantz, R. L. (2014). <em>Kennewick Man: The scientific investigation of an ancient American skeleton</em>. Texas A&amp;M University Press.<br><br>
+          Rasmussen, M., et al. (2015). The ancestry and affiliations of Kennewick Man. <em>Nature</em>, <em>523</em>(7561), 455–458.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- CORNER ATTRIBUTION -->
+<div class="corner-badge">
+  <div class="glass-panel px-4 py-2.5 rounded-xl border border-gold-500/40 shadow-2xl text-right">
+    <div class="text-[10px] font-bold tracking-wider uppercase text-gold-500">Prototype Sample</div>
+    <div class="text-[11px] font-semibold text-parchment-100">Asia Khan, Hon. BA (McMaster University)</div>
+    <div class="text-[10px] italic text-parchment-200/70">Behavioral UX Researcher and Design Anthropologist</div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   TAB SWITCH
+   ============================================================ */
+const TABS = ['gis','discovery','reconstruction','artifact','dna','ritual','significance'];
+const LAB_STATE = {};
+const LAB_INIT_FLAG = {};
+
+function switchTab(id){
+  TABS.forEach(t=>{
+    const tabEl = document.getElementById(`tab-${t}`);
+    if(tabEl) tabEl.classList.add('hidden');
+    const n=document.getElementById(`nav-${t}`);
+    if(n){
+      n.classList.remove('bg-terracotta-600','text-parchment-100','shadow-md','aerial-active');
+      n.classList.add('bg-parchment-800/80','text-parchment-200');
+    }
+  });
+  const activeTab = document.getElementById(`tab-${id}`);
+  if(activeTab) activeTab.classList.remove('hidden');
+  const n=document.getElementById(`nav-${id}`);
+  if(n){
+    n.classList.remove('bg-parchment-800/80','text-parchment-200');
+    n.classList.add('bg-terracotta-600','text-parchment-100','shadow-md');
+  }
+
+  setTimeout(()=>{
+    if(id==='gis' && !LAB_INIT_FLAG.gis){ initGIS(); LAB_INIT_FLAG.gis=true; }
+    else if(id==='gis' && gisMap){ gisMap.resize(); }
+    else if(id==='artifact' && !LAB_INIT_FLAG.artifact){
+      initHoloSkeleton(); LAB_INIT_FLAG.artifact=true;
+    }
+    else if(id==='artifact' && holoState && holoState.renderer){
+      const el = document.getElementById('holo-skeleton-container');
+      resizeHolo(el.clientWidth, el.clientHeight);
+    }
+    else if(['dna','ritual'].includes(id) && !LAB_INIT_FLAG[id]){
+      initLab(id); LAB_INIT_FLAG[id]=true;
+    }
+    else if(LAB_STATE[id]) resizeR(LAB_STATE[id].renderer, LAB_STATE[id].camera, document.getElementById(`${id}-container`));
+  }, 80);
+}
+
+function resizeR(r,c,el){
+  if(!r||!el)return;
+  const w=el.clientWidth, h=el.clientHeight;
+  if(!w||!h)return;
+  r.setSize(w,h,false); c.aspect=w/h; c.updateProjectionMatrix();
+}
+
+/* ============================================================
+   GIS SITES DATA
+   ============================================================ */
+const sites=[
+{name:"Columbia Park · Discovery Site (Kennewick, WA)",culture:"Paleoamerican · 8,500 BP",lat:46.2215,lng:-119.1630,
+desc:"The Ancient One (Kennewick Man) was discovered on July 28, 1996, in the shallows of the Columbia River at Columbia Park, Kennewick, Washington. The nearly complete skeleton is one of the oldest and most complete ever found in North America.",
+context:"Recovered from the Columbia River shallows on federal land managed by the US Army Corps of Engineers. The skeleton comprised over 380 bones and fragments. A stone spearpoint (Cascade point) was embedded in the right hip bone with healed bone growth around it.",
+flora:["Bone collagen (for radiocarbon dating)","Dental calculus (for dietary analysis)","Stone spearpoint (Cascade type)"],
+artifacts:["Cranium (long, narrow skull)","Spearpoint (Cascade point, embedded in hip)","380+ skeletal elements","Dental remains"],
+method:"Radiocarbon dating (University of California, Riverside); CT scanning and rapid prototyping for skull reconstruction; DNA sequencing (University of Copenhagen, 2015).",
+directors:"Discovered by Will Thomas and Dave Deacy; initial analysis by James Chatters; scientific study led by Dr. Douglas Owsley (Smithsonian); genome sequencing led by Dr. Eske Willerslev (University of Copenhagen).",
+apa:"Rasmussen, M., Sikora, M., Albrechtsen, A., Korneliussen, T. S., Moreno-Mayar, J. V., Poznik, G. D., ... & Willerslev, E. (2015). The ancestry and affiliations of Kennewick Man. <em>Nature</em>, <em>523</em>(7561), 455–458. https://doi.org/10.1038/nature14625",
+apaShort:"Rasmussen et al. (2015). Nature, 523(7561), 455–458."},
+{name:"Burke Museum (Seattle, WA)",culture:"Research Repository · 1998–2016",lat:47.6603,lng:-122.3116,
+desc:"The Burke Museum at the University of Washington served as the repository for the Ancient One's remains during the legal dispute. Scientists conducted studies here between 2005 and 2006 after a court ruling allowed limited scientific access.",
+context:"The remains were held at the Burke Museum while the legal case between scientists and the federal government proceeded. The museum was a key site in the debate over NAGPRA and scientific access to ancient remains.",
+flora:["Not applicable (research facility)"],
+artifacts:["Ancient One remains (repatriated 2016)","Comparative collections for bioarchaeological study"],
+method:"Bioarchaeological analysis; CT scanning; osteometric data collection.",
+directors:"Dr. Douglas Owsley (Smithsonian) led the scientific team; Burke Museum provided facilities and curation.",
+apa:"Burke Museum. (n.d.). <em>Kennewick Man: The scientific investigation</em>. University of Washington. https://www.burkemuseum.org/",
+apaShort:"Burke Museum. (n.d.)."},
+{name:"Confederated Tribes of the Colville Reservation",culture:"Claimant Tribe · Reburial 2017",lat:48.1093,lng:-118.9558,
+desc:"The Confederated Tribes of the Colville Reservation was one of the five claimant tribes that fought for repatriation of the Ancient One. DNA analysis showed the Ancient One is most closely related to the Colville people.",
+context:"The Colville Reservation is home to the Colville, Okanogan, Lakes, Sanpoil, Nespelem, Palus, Wenatchi, Chelan, Entiat, Methow, Sinkiuse-Columbia, and Nez Perce tribes. They asserted cultural affiliation with the Ancient One based on oral histories and aboriginal territory.",
+flora:["Traditional food plants (camas, bitterroot, berries)"],
+artifacts:["Cultural items associated with reburial ceremonies","Oral history records"],
+method:"Cultural affiliation determination under NAGPRA; DNA analysis (2015); reburial ceremony (2017).",
+directors:"Colville Tribal Council; Cultural Resources Department.",
+apa:"Confederated Tribes of the Colville Reservation. (n.d.). <em>The Ancient One</em>. https://www.colvilletribes.com/",
+apaShort:"Confederated Tribes of the Colville Reservation. (n.d.)."}];
+
+function updateGIS(i){
+  const s=sites[i];
+  document.getElementById('gis-site-title').innerText=s.name;
+  document.getElementById('gis-site-culture').innerText=s.culture;
+  document.getElementById('gis-site-desc').innerText=s.desc;
+  document.getElementById('gis-site-context').innerText=s.context;
+  document.getElementById('gis-site-artifacts').innerHTML=s.artifacts.map(a=>`<li>${a}</li>`).join('');
+  document.getElementById('gis-site-flora').innerHTML=s.flora.map(f=>`<li>${f}</li>`).join('');
+  document.getElementById('gis-site-method').innerText=s.method;
+  document.getElementById('gis-site-directors').innerText=s.directors;
+  document.getElementById('gis-site-apa').innerHTML=s.apa;
+}
+
+/* ============================================================
+   GIS with MapLibre
+   ============================================================ */
+let gisMap = null;
+let gisTilted = false;
+let flyoverInterval = null;
+let userMarker = null;
+
+function initGIS(){
+  const el = document.getElementById('gis-map');
+  if(!el){ console.error('gis-map missing'); return; }
+  if(gisMap){ gisMap.resize(); return; }
+
+  try {
+    gisMap = new maplibregl.Map({
+      container: 'gis-map',
+      style: {
+        version: 8,
+        sources: {
+          'satellite': {
+            type: 'raster',
+            tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
+            tileSize: 256,
+            attribution: 'Imagery © Esri, Maxar, Earthstar Geographics',
+            maxzoom: 19
+          },
+          'labels': {
+            type: 'raster',
+            tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}'],
+            tileSize: 256,
+            maxzoom: 19
+          },
+          'labels-reference': {
+            type: 'raster',
+            tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Reference_Overlay/MapServer/tile/{z}/{y}/{x}'],
+            tileSize: 256,
+            maxzoom: 19
+          }
+        },
+        layers: [
+          { id: 'sat', type: 'raster', source: 'satellite' },
+          { id: 'labels-reference', type: 'raster', source: 'labels-reference', paint: { 'raster-opacity': 0.55 } },
+          { id: 'labels', type: 'raster', source: 'labels', paint: { 'raster-opacity': 1 } }
+        ]
+      },
+      center: [-119.1630, 46.2215],
+      zoom: 11,
+      pitch: 55,
+      bearing: -20,
+      maxPitch: 85,
+      antialias: true
+    });
+  } catch(e){
+    console.error('Map init failed:', e);
+    return;
+  }
+
+  gisMap.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-right');
+  gisMap.addControl(new maplibregl.ScaleControl({ maxWidth: 120, unit: 'metric' }), 'bottom-right');
+  gisMap.addControl(new maplibregl.FullscreenControl(), 'top-right');
+
+  gisMap.on('load', () => {
+    /* Halo circles under stars */
+    gisMap.addSource('beacon-halos', {
+      type: 'geojson',
+      data: {
+        type: 'FeatureCollection',
+        features: sites.map((s)=>({
+          type: 'Feature',
+          properties: {},
+          geometry: { type: 'Point', coordinates: [s.lng, s.lat] }
+        }))
+      }
+    });
+    gisMap.addLayer({
+      id: 'beacon-halos-layer',
+      type: 'circle',
+      source: 'beacon-halos',
+      paint: {
+        'circle-radius': ['interpolate',['linear'],['zoom'], 4, 18, 6, 28, 8, 40, 12, 70],
+        'circle-color': '#D4AF37',
+        'circle-opacity': 0.16,
+        'circle-blur': 1.4
+      }
+    });
+
+    /* GOLD STAR HOTSPOTS */
+    sites.forEach((s, i) => {
+      const starEl = document.createElement('div');
+      starEl.className = 'star-beacon';
+      starEl.innerHTML = `
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <polygon class="star-core" points="12,1.5 15,9 23,9.3 16.8,14.4 19.1,22.2 12,17.6 4.9,22.2 7.2,14.4 1,9.3 9,9"/>
+        </svg>
+        <div class="sparkle"></div>
+      `;
+      starEl.title = s.name;
+
+      const popupHTML = `
+        <div style="max-width:320px;font-family:'Inter',sans-serif;">
+          <div style="font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:#D4AF37;font-weight:700;margin-bottom:5px;">◈ ${s.culture}</div>
+          <div style="font-size:15px;font-weight:700;color:#FDFBF7;margin-bottom:8px;line-height:1.35;font-family:'Merriweather',serif;">${s.name}</div>
+          <div style="font-size:12.5px;color:#F4EFE6;line-height:1.6;margin-bottom:10px;">${s.desc.substring(0,200)}...</div>
+          <div style="border-top:1px solid rgba(212,175,55,.35);padding-top:8px;">
+            <div style="font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:#D4AF37;font-weight:700;margin-bottom:4px;">APA 7TH</div>
+            <div style="font-size:11px;color:#FDFBF7;line-height:1.55;font-style:italic;">${s.apaShort}</div>
+          </div>
+        </div>
+      `;
+
+      const popup = new maplibregl.Popup({
+        offset: 30, closeButton: true, closeOnClick: true,
+        maxWidth: '340px', className: 'site-popup'
+      }).setHTML(popupHTML);
+
+      new maplibregl.Marker({ element: starEl, anchor: 'center' })
+        .setLngLat([s.lng, s.lat])
+        .setPopup(popup)
+        .addTo(gisMap);
+
+      starEl.addEventListener('click', (e) => {
+        e.stopPropagation();
+        updateGIS(i);
+      });
+    });
+
+    gisMap.easeTo({ pitch: 55, bearing: -20, duration: 2200 });
+  });
+
+  new ResizeObserver(() => gisMap && gisMap.resize()).observe(el);
+}
+
+function locateMe(){
+  if(!gisMap){ alert('Map is still loading. Try again in a moment.'); return; }
+  const btn = document.getElementById('locate-btn');
+  if(!navigator.geolocation){ alert('Geolocation is not supported by this browser.'); return; }
+  if(btn){ btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Locating...'; }
+
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      const lat = pos.coords.latitude;
+      const lng = pos.coords.longitude;
+      const accuracy = pos.coords.accuracy;
+      gisMap.flyTo({ center: [lng, lat], zoom: 15, pitch: 65, bearing: -25, duration: 2600, essential: true });
+      if(userMarker){ userMarker.remove(); }
+      const pinEl = document.createElement('div');
+      pinEl.className = 'user-pin-pulse';
+      pinEl.style.cssText = `width:22px;height:22px;border-radius:50%;background:#D4AF37;border:3px solid #FDFBF7;box-shadow:0 0 16px #D4AF37;cursor:pointer;`;
+      userMarker = new maplibregl.Marker({ element: pinEl, anchor: 'center' })
+        .setLngLat([lng, lat])
+        .setPopup(new maplibregl.Popup({ offset: 22, className: 'site-popup' })
+          .setHTML(`
+            <div style="font-family:'Inter',sans-serif;max-width:240px;">
+              <div style="font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:#D4AF37;font-weight:700;margin-bottom:5px;">◈ YOU ARE HERE</div>
+              <div style="font-size:12.5px;color:#F4EFE6;line-height:1.6;">LAT: <b>${lat.toFixed(4)}</b><br>LNG: <b>${lng.toFixed(4)}</b><br>ACCURACY: <b>±${Math.round(accuracy)} m</b></div>
+            </div>
+          `))
+        .addTo(gisMap);
+      userMarker.togglePopup();
+      if(btn){ btn.innerHTML = '<i class="fa-solid fa-location-crosshairs"></i> Find Me'; }
+    },
+    (err) => {
+      alert('Could not get your location:\n\n' + err.message);
+      if(btn){ btn.innerHTML = '<i class="fa-solid fa-location-crosshairs"></i> Find Me'; }
+    },
+    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+  );
+}
+
+function toggleTilt(){
+  if(!gisMap) return;
+  gisTilted = !gisTilted;
+  gisMap.easeTo({ pitch: gisTilted ? 70 : 0, bearing: gisTilted ? -25 : 0, duration: 1200 });
+  const btn = document.getElementById('tilt-btn');
+  if(btn) btn.innerHTML = gisTilted ? 'Flat View' : '3D Tilt';
+}
+
+function toggleFlyover(){
+  if(!gisMap) return;
+  const btn = document.getElementById('flyover-btn');
+  if(flyoverInterval){
+    clearInterval(flyoverInterval);
+    flyoverInterval = null;
+    if(btn){ btn.innerHTML = 'Flyover'; btn.classList.remove('aerial-active'); }
+    return;
+  }
+  gisMap.easeTo({ pitch: 70, duration: 1500 });
+  let bearing = gisMap.getBearing();
+  flyoverInterval = setInterval(() => {
+    bearing += 0.15;
+    gisMap.rotateTo(bearing, { duration: 0 });
+  }, 50);
+  if(btn){ btn.innerHTML = 'Stop'; btn.classList.add('aerial-active'); }
+}
+
+function resetGlobeCamera(){
+  if(!gisMap) return;
+  gisTilted = false;
+  if(flyoverInterval){ clearInterval(flyoverInterval); flyoverInterval = null; }
+  gisMap.flyTo({ center: [-119.1630, 46.2215], zoom: 11, pitch: 55, bearing: -20, duration: 2200 });
+  const btn = document.getElementById('tilt-btn');
+  if(btn) btn.innerHTML = '3D Tilt';
+  const fbtn = document.getElementById('flyover-btn');
+  if(fbtn){ fbtn.innerHTML = 'Flyover'; fbtn.classList.remove('aerial-active'); }
+}
+
+/* ============================================================
+   BONE DATA (for osteological diagram)
+   ============================================================ */
+const BONE_DATA = {
+  skull: {title:"Skull (Cranium)",desc:"The Ancient One's skull was long and narrow (dolichocephalic) with a large jaw and pronounced chin. These features initially puzzled scientists and led to controversial early interpretations about his ancestry.",
+    details:[{label:"Age at Death",value:"~40–45 years old"},{label:"Morphology",value:"Long, narrow skull"},{label:"Key Feature",value:"Large jaw, pronounced chin"},{label:"Significance",value:"Skull shape does not determine ancestry — DNA later proved Native American heritage"}],
+    apa:"Owsley, D. W., &amp; Jantz, R. L. (2014). <em>Kennewick Man: The scientific investigation of an ancient American skeleton</em>. Texas A&amp;M University Press."},
+  ribs: {title:"Ribcage",desc:"The ribcage shows evidence of healed fractures. The Ancient One survived multiple injuries during his lifetime, indicating a life of physical activity and resilience.",
+    details:[{label:"Element",value:"Ribs"},{label:"Pathology",value:"Healed rib fractures"},{label:"Significance",value:"Evidence of traumatic injury and recovery"}],
+    apa:"Owsley, D. W., &amp; Jantz, R. L. (2014). <em>Kennewick Man: The scientific investigation of an ancient American skeleton</em>. Texas A&amp;M University Press."},
+  pelvis: {title:"Pelvis (Hip Bone)",desc:"A stone spearpoint (Cascade point) was embedded in the right hip bone. Crucially, the bone had healed around the point, proving the wound was not fatal and occurred years before his death.",
+    details:[{label:"Element",value:"Right ilium (pelvis)"},{label:"Artifact",value:"Cascade spearpoint (embedded)"},{label:"Pathology",value:"Healed penetrating trauma"},{label:"Significance",value:"Proves survival — wound was not fatal"}],
+    apa:"Chatters, J. C. (2001). <em>Ancient encounters: Kennewick Man and the first Americans</em>. Simon &amp; Schuster."},
+  spine: {title:"Spine (Vertebral Column)",desc:"The spine shows signs of degenerative changes consistent with an active lifestyle. The Ancient One stood about 5'8\" (1.73m) and weighed 70–75 kg.",
+    details:[{label:"Stature",value:"~5'8\" (1.73m)"},{label:"Weight",value:"70–75 kg"},{label:"Condition",value:"Degenerative changes"}],
+    apa:"Owsley, D. W., &amp; Jantz, R. L. (2014). <em>Kennewick Man: The scientific investigation of an ancient American skeleton</em>. Texas A&amp;M University Press."},
+  "arm-left": {title:"Left Arm",desc:"The arm bones show evidence of heavy use and possibly healed injuries. The Ancient One used his arms for hunting, fishing, and daily activities.",
+    details:[{label:"Elements",value:"Humerus, radius, ulna"},{label:"Condition",value:"Heavy use, possible healed injuries"}],
+    apa:"Owsley, D. W., &amp; Jantz, R. L. (2014). <em>Kennewick Man: The scientific investigation of an ancient American skeleton</em>. Texas A&amp;M University Press."},
+  "arm-right": {title:"Right Arm",desc:"The right arm also shows signs of heavy use. The Ancient One survived multiple injuries, described as 'tough as nails' by researchers.",
+    details:[{label:"Elements",value:"Humerus, radius, ulna"},{label:"Condition",value:"Heavy use, healed fractures"},{label:"Significance",value:"Survivor of multiple injuries"}],
+    apa:"Owsley, D. W., &amp; Jantz, R. L. (2014). <em>Kennewick Man: The scientific investigation of an ancient American skeleton</em>. Texas A&amp;M University Press."},
+  "leg-left": {title:"Left Leg",desc:"The leg bones provide information about stature and activity. The Ancient One walked and hunted across the Columbia Plateau landscape.",
+    details:[{label:"Elements",value:"Femur, tibia, fibula"},{label:"Stature",value:"~5'8\" (1.73m)"}],
+    apa:"Owsley, D. W., &amp; Jantz, R. L. (2014). <em>Kennewick Man: The scientific investigation of an ancient American skeleton</em>. Texas A&amp;M University Press."},
+  "leg-right": {title:"Right Leg",desc:"The right leg bones complete the picture of a physically active life. The Ancient One was a survivor, living with multiple healed injuries.",
+    details:[{label:"Elements",value:"Femur, tibia, fibula"},{label:"Stature",value:"~5'8\" (1.73m)"}],
+    apa:"Owsley, D. W., &amp; Jantz, R. L. (2014). <em>Kennewick Man: The scientific investigation of an ancient American skeleton</em>. Texas A&amp;M University Press."}
+};
+
+function updateBonePanel(key){
+  const d = BONE_DATA[key];
+  if(!d) return;
+  document.getElementById('bone-panel-title').innerText = d.title;
+  document.getElementById('bone-panel-desc').innerText = d.desc;
+  document.getElementById('bone-panel-details').innerHTML = d.details.map(detail => `
+    <div class="bg-[#11231A]/80 p-3 rounded-xl border border-parchment-200/10">
+      <span class="font-semibold text-gold-500 block text-[10px] uppercase tracking-wide mb-1">${detail.label}</span>
+      <p class="text-parchment-200/90 text-[13px]">${detail.value}</p>
+    </div>
+  `).join('');
+  document.getElementById('bone-panel-apa').innerHTML = d.apa;
+  document.getElementById('bone-panel-apa-wrap').classList.remove('hidden');
+}
+
+/* ============================================================
+   HOLOGRAPHIC 3D SKELETON
+   ============================================================ */
+let holoState = null;
+let holoAutoRotate = true;
+
+function initHoloSkeleton(){
+  const container = document.getElementById('holo-skeleton');
+  if(!container) return;
+  if(holoState) return;
+  const w = container.clientWidth || 800;
+  const h = container.clientHeight || 500;
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(45, w/h, 0.1, 1000);
+  camera.position.set(0, 0, 12);
+
+  const renderer = new THREE.WebGLRenderer({antialias:true, alpha:true});
+  renderer.setSize(w, h);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setClearColor(0x000000, 0);
+  container.appendChild(renderer.domElement);
+
+  scene.add(new THREE.AmbientLight(0xD4AF37, 0.5));
+  const key = new THREE.DirectionalLight(0xF4EFE6, 0.8); key.position.set(5, 10, 8); scene.add(key);
+  const rim = new THREE.PointLight(0xC85A32, 1.2, 30); rim.position.set(-8, 2, -6); scene.add(rim);
+  const fill = new THREE.PointLight(0xD4AF37, 0.6, 30); fill.position.set(8, -5, 6); scene.add(fill);
+
+  const boneMat = new THREE.MeshPhongMaterial({
+    color: 0xD4AF37, emissive: 0x7E3314, emissiveIntensity: 0.5,
+    transparent: true, opacity: 0.35, shininess: 80, wireframe: true
+  });
+  const glowMat = new THREE.MeshBasicMaterial({
+    color: 0xD4AF37, transparent: true, opacity: 0.15, side: THREE.BackSide
+  });
+
+  const skeleton = new THREE.Group();
+  scene.add(skeleton);
+  const clickable = [];
+
+  const skull = new THREE.Group();
+  const cranium = new THREE.Mesh(new THREE.SphereGeometry(0.85, 20, 20), boneMat);
+  cranium.scale.set(0.95, 1.05, 1.15);
+  cranium.userData.boneKey = 'skull'; clickable.push(cranium);
+  skull.add(cranium);
+  const craniumGlow = new THREE.Mesh(new THREE.SphereGeometry(0.95, 20, 20), glowMat);
+  craniumGlow.scale.set(0.95, 1.05, 1.15);
+  skull.add(craniumGlow);
+  const jaw = new THREE.Mesh(new THREE.BoxGeometry(0.85, 0.5, 0.7), boneMat);
+  jaw.position.set(0, -0.7, 0.25);
+  jaw.userData.boneKey = 'skull'; clickable.push(jaw);
+  skull.add(jaw);
+  const eyeMat = new THREE.MeshBasicMaterial({color:0x0b1711});
+  const eyeL = new THREE.Mesh(new THREE.SphereGeometry(0.18, 12, 12), eyeMat); eyeL.position.set(-0.3, 0.05, 0.75); skull.add(eyeL);
+  const eyeR = new THREE.Mesh(new THREE.SphereGeometry(0.18, 12, 12), eyeMat); eyeR.position.set(0.3, 0.05, 0.75); skull.add(eyeR);
+  skull.position.set(0, 3.6, 0);
+  skeleton.add(skull);
+  const skullHalo = new THREE.Mesh(new THREE.RingGeometry(1.1, 1.2, 32), new THREE.MeshBasicMaterial({color:0xD4AF37, transparent:true, opacity:0.25, side:THREE.DoubleSide}));
+  skullHalo.position.set(0, 3.6, 0);
+  skullHalo.rotation.x = Math.PI/2;
+  skeleton.add(skullHalo);
+
+  for(let i=0; i<5; i++){
+    const v = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.12, 10), boneMat);
+    v.position.set(0, 2.95 - i*0.13, 0);
+    v.userData.boneKey = 'spine'; clickable.push(v);
+    skeleton.add(v);
+  }
+  for(let i=0; i<12; i++){
+    const y = 2.35 - i*0.18;
+    const v = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.11, 10), boneMat);
+    v.position.set(0, y, 0);
+    v.userData.boneKey = 'spine'; clickable.push(v);
+    skeleton.add(v);
+  }
+
+  for(let i=0; i<10; i++){
+    const t = i / 9;
+    const y = 2.2 - t * 1.9;
+    const ribRadius = 1.0 + Math.sin(t * Math.PI) * 0.9;
+    const rib = new THREE.Mesh(new THREE.TorusGeometry(ribRadius, 0.06, 6, 24, Math.PI), boneMat);
+    rib.rotation.x = Math.PI/2;
+    rib.rotation.z = Math.PI;
+    rib.position.set(0, y, 0.05);
+    rib.scale.set(1, 0.85, 1);
+    rib.userData.boneKey = 'ribs'; clickable.push(rib);
+    skeleton.add(rib);
+  }
+  const sternum = new THREE.Mesh(new THREE.BoxGeometry(0.16, 1.8, 0.1), boneMat);
+  sternum.position.set(0, 1.25, 0.95);
+  sternum.userData.boneKey = 'ribs'; clickable.push(sternum);
+  skeleton.add(sternum);
+
+  const clavGeo = new THREE.CylinderGeometry(0.08, 0.08, 1.5, 8);
+  const clavL = new THREE.Mesh(clavGeo, boneMat);
+  clavL.rotation.z = Math.PI/2; clavL.position.set(-0.75, 2.5, 0.5);
+  clavL.userData.boneKey = 'ribs'; clickable.push(clavL); skeleton.add(clavL);
+  const clavR = new THREE.Mesh(clavGeo, boneMat);
+  clavR.rotation.z = Math.PI/2; clavR.position.set(0.75, 2.5, 0.5);
+  clavR.userData.boneKey = 'ribs'; clickable.push(clavR); skeleton.add(clavR);
+
+  const pelvis = new THREE.Mesh(new THREE.TorusGeometry(1.0, 0.2, 8, 32, Math.PI * 1.2), boneMat);
+  pelvis.rotation.x = Math.PI/2; pelvis.rotation.z = Math.PI * 0.9;
+  pelvis.position.set(0, -0.4, 0); pelvis.scale.set(1, 1.1, 1);
+  pelvis.userData.boneKey = 'pelvis'; clickable.push(pelvis); skeleton.add(pelvis);
+  const hipL = new THREE.Mesh(new THREE.SphereGeometry(0.22, 12, 12), boneMat);
+  hipL.position.set(-0.95, -0.7, 0);
+  hipL.userData.boneKey = 'pelvis'; clickable.push(hipL); skeleton.add(hipL);
+  const hipR = new THREE.Mesh(new THREE.SphereGeometry(0.22, 12, 12), boneMat);
+  hipR.position.set(0.95, -0.7, 0);
+  hipR.userData.boneKey = 'pelvis'; clickable.push(hipR); skeleton.add(hipR);
+  const wound = new THREE.Mesh(new THREE.SphereGeometry(0.14, 12, 12), new THREE.MeshBasicMaterial({color:0xC85A32, transparent:true, opacity:0.7}));
+  wound.position.set(1.15, -0.75, 0.15);
+  wound.userData.boneKey = 'pelvis'; clickable.push(wound); skeleton.add(wound);
+
+  function makeArm(side){
+    const sign = side === 'L' ? -1 : 1;
+    const key = 'arm-' + (side === 'L' ? 'left' : 'right');
+    const shoulder = new THREE.Mesh(new THREE.SphereGeometry(0.16, 10, 10), boneMat);
+    shoulder.position.set(sign * 1.4, 2.4, 0);
+    shoulder.userData.boneKey = key; clickable.push(shoulder); skeleton.add(shoulder);
+    const humerus = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.09, 1.4, 8), boneMat);
+    humerus.position.set(sign * 1.55, 1.65, 0); humerus.rotation.z = sign * 0.12;
+    humerus.userData.boneKey = key; clickable.push(humerus); skeleton.add(humerus);
+    const elbow = new THREE.Mesh(new THREE.SphereGeometry(0.12, 10, 10), boneMat);
+    elbow.position.set(sign * 1.7, 0.9, 0);
+    elbow.userData.boneKey = key; clickable.push(elbow); skeleton.add(elbow);
+    const foreArm = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.07, 1.3, 8), boneMat);
+    foreArm.position.set(sign * 1.75, 0.2, 0); foreArm.rotation.z = sign * 0.04;
+    foreArm.userData.boneKey = key; clickable.push(foreArm); skeleton.add(foreArm);
+    const hand = new THREE.Mesh(new THREE.SphereGeometry(0.14, 10, 10), boneMat);
+    hand.position.set(sign * 1.78, -0.5, 0);
+    hand.userData.boneKey = key; clickable.push(hand); skeleton.add(hand);
+  }
+  makeArm('L'); makeArm('R');
+
+  function makeLeg(side){
+    const sign = side === 'L' ? -1 : 1;
+    const key = 'leg-' + (side === 'L' ? 'left' : 'right');
+    const femur = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.12, 1.6, 8), boneMat);
+    femur.position.set(sign * 0.55, -1.7, 0);
+    femur.userData.boneKey = key; clickable.push(femur); skeleton.add(femur);
+    const knee = new THREE.Mesh(new THREE.SphereGeometry(0.14, 10, 10), boneMat);
+    knee.position.set(sign * 0.55, -2.55, 0);
+    knee.userData.boneKey = key; clickable.push(knee); skeleton.add(knee);
+    const tibia = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.08, 1.5, 8), boneMat);
+    tibia.position.set(sign * 0.55, -3.35, 0);
+    tibia.userData.boneKey = key; clickable.push(tibia); skeleton.add(tibia);
+    const foot = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.1, 0.4), boneMat);
+    foot.position.set(sign * 0.55, -4.15, 0.1);
+    foot.userData.boneKey = key; clickable.push(foot); skeleton.add(foot);
+  }
+  makeLeg('L'); makeLeg('R');
+
+  skeleton.position.y = -0.1;
+
+  const shellGeo = new THREE.CylinderGeometry(2.0, 2.0, 9, 16, 1, true);
+  const shell = new THREE.Mesh(shellGeo, new THREE.MeshBasicMaterial({
+    color: 0xD4AF37, transparent: true, opacity: 0.04, wireframe: true, side: THREE.DoubleSide
+  }));
+  scene.add(shell);
+
+  holoState = {
+    scene, camera, renderer, skeleton, clickable,
+    rotation: {x: 0, y: 0},
+    targetRotation: {x: 0, y: 0},
+    dragging: false,
+    prevMouse: {x:0, y:0},
+    container
+  };
+
+  const raycaster = new THREE.Raycaster();
+  const mouse = new THREE.Vector2();
+  let pointerMoved = false;
+
+  renderer.domElement.addEventListener('pointerdown', (e) => {
+    holoState.dragging = true;
+    holoState.prevMouse = {x: e.clientX, y: e.clientY};
+    pointerMoved = false;
+  });
+  window.addEventListener('pointerup', (e) => {
+    if(holoState.dragging && !pointerMoved){
+      const rect = renderer.domElement.getBoundingClientRect();
+      mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+      raycaster.setFromCamera(mouse, camera);
+      const hits = raycaster.intersectObjects(holoState.clickable, false);
+      if(hits.length > 0){
+        const boneKey = hits[0].object.userData.boneKey;
+        if(boneKey) updateBonePanel(boneKey);
+      }
+    }
+    holoState.dragging = false;
+  });
+  window.addEventListener('pointermove', (e) => {
+    if(!holoState.dragging) return;
+    const dx = e.clientX - holoState.prevMouse.x;
+    const dy = e.clientY - holoState.prevMouse.y;
+    if(Math.abs(dx) > 2 || Math.abs(dy) > 2) pointerMoved = true;
+    holoState.targetRotation.y += dx * 0.008;
+    holoState.targetRotation.x += dy * 0.008;
+    holoState.targetRotation.x = Math.max(-0.6, Math.min(0.6, holoState.targetRotation.x));
+    holoState.prevMouse = {x: e.clientX, y: e.clientY};
+  });
+
+  renderer.domElement.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    camera.position.z = Math.max(7, Math.min(20, camera.position.z + e.deltaY * 0.01));
+  }, {passive:false});
+
+  let time = 0;
+  function animate(){
+    requestAnimationFrame(animate);
+    time += 0.016;
+    if(holoAutoRotate && !holoState.dragging){
+      holoState.targetRotation.y += 0.005;
+    }
+    holoState.rotation.x += (holoState.targetRotation.x - holoState.rotation.x) * 0.08;
+    holoState.rotation.y += (holoState.targetRotation.y - holoState.rotation.y) * 0.08;
+    skeleton.rotation.x = holoState.rotation.x;
+    skeleton.rotation.y = holoState.rotation.y;
+    const pulse = 0.4 + Math.sin(time * 2) * 0.15;
+    boneMat.emissiveIntensity = pulse;
+    renderer.render(scene, camera);
+  }
+  animate();
+
+  new ResizeObserver(() => {
+    const nw = container.clientWidth;
+    const nh = container.clientHeight;
+    if(nw && nh) resizeHolo(nw, nh);
+  }).observe(container);
+  window.addEventListener('resize', () => {
+    const nw = container.clientWidth;
+    const nh = container.clientHeight;
+    if(nw && nh) resizeHolo(nw, nh);
+  });
+}
+
+function resizeHolo(w, h){
+  if(!holoState) return;
+  holoState.renderer.setSize(w, h, false);
+  holoState.camera.aspect = w / h;
+  holoState.camera.updateProjectionMatrix();
+}
+
+function toggleHoloAutoRotate(){
+  holoAutoRotate = !holoAutoRotate;
+  const btn = document.getElementById('holo-rotate-btn');
+  if(btn){
+    btn.innerHTML = holoAutoRotate
+      ? '<i class="fa-solid fa-rotate"></i> Pause Rotation'
+      : '<i class="fa-solid fa-play"></i> Resume Rotation';
+  }
+}
+
+function resetHoloView(){
+  if(!holoState) return;
+  holoState.targetRotation = {x: 0, y: 0};
+  holoState.camera.position.z = 12;
+  holoAutoRotate = true;
+  const btn = document.getElementById('holo-rotate-btn');
+  if(btn) btn.innerHTML = '<i class="fa-solid fa-rotate"></i> Pause Rotation';
+}
+
+/* ============================================================
+   MODEL BUILDERS (DNA + RITUAL)
+   ============================================================ */
+function dnaHelix(){
+  const g=new THREE.Group();
+  const strand1=new THREE.Group();
+  const strand2=new THREE.Group();
+  const baseMat1=new THREE.MeshStandardMaterial({color:0x2E5A44,roughness:0.3,metalness:0.4});
+  const baseMat2=new THREE.MeshStandardMaterial({color:0xC85A32,roughness:0.3,metalness:0.4});
+  const rungMat=new THREE.MeshStandardMaterial({color:0xD4AF37,roughness:0.5,metalness:0.3});
+  for(let i=0;i<20;i++){
+    const y=(i-10)*0.4;
+    const angle=i*0.5;
+    const x1=Math.cos(angle)*1.5, z1=Math.sin(angle)*1.5;
+    const x2=Math.cos(angle+Math.PI)*1.5, z2=Math.sin(angle+Math.PI)*1.5;
+    const s1=new THREE.Mesh(new THREE.SphereGeometry(0.2,16,16),baseMat1); s1.position.set(x1,y,z1); strand1.add(s1);
+    const s2=new THREE.Mesh(new THREE.SphereGeometry(0.2,16,16),baseMat2); s2.position.set(x2,y,z2); strand2.add(s2);
+    const rung=new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.06,3,8),rungMat);
+    rung.position.set(0,y,0); rung.rotation.z=Math.PI/2; rung.rotation.y=-angle; g.add(rung);
+  }
+  g.add(strand1); g.add(strand2);
+  return g;
+}
+
+function dnaMolecule(){
+  const g=new THREE.Group();
+  const atomMat1=new THREE.MeshStandardMaterial({color:0x00f0ff,roughness:0.3,metalness:0.5,emissive:0x005060});
+  const atomMat2=new THREE.MeshStandardMaterial({color:0x2E5A44,roughness:0.3,metalness:0.4});
+  const bondMat=new THREE.MeshStandardMaterial({color:0xD4AF37,roughness:0.5});
+  const nodes=[[0,0,0],[-1.5,0.8,0],[-1.5,-0.8,0],[0,-1.5,0],[1.5,-0.8,0],[1.5,0.8,0]];
+  nodes.forEach((p,i)=>{
+    const s=new THREE.Mesh(new THREE.SphereGeometry(0.4,16,16),i%2===0?atomMat1:atomMat2);
+    s.position.set(p[0],p[1],p[2]); g.add(s);
+  });
+  const edges=[[0,1],[1,2],[2,3],[3,4],[4,5],[5,0]];
+  edges.forEach(([a,b])=>{
+    const va=new THREE.Vector3(nodes[a][0],nodes[a][1],nodes[a][2]);
+    const vb=new THREE.Vector3(nodes[b][0],nodes[b][1],nodes[b][2]);
+    const bond=new THREE.Mesh(new THREE.CylinderGeometry(0.1,0.1,va.distanceTo(vb),8),bondMat);
+    bond.position.copy(va.clone().add(vb).multiplyScalar(0.5));
+    bond.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),vb.clone().sub(va).normalize());
+    g.add(bond);
+  });
+  return g;
+}
+
+function chromosome(){
+  const g=new THREE.Group();
+  const mat=new THREE.MeshStandardMaterial({color:0x2E5A44,roughness:0.5,metalness:0.3});
+  const arm1=new THREE.Mesh(new THREE.CylinderGeometry(0.3,0.5,3,12),mat); arm1.position.y=1.5; g.add(arm1);
+  const arm2=new THREE.Mesh(new THREE.CylinderGeometry(0.3,0.5,3,12),mat); arm2.position.y=-1.5; g.add(arm2);
+  const centromere=new THREE.Mesh(new THREE.SphereGeometry(0.6,16,16),new THREE.MeshStandardMaterial({color:0xC85A32,roughness:0.4}));
+  g.add(centromere);
+  return g;
+}
+
+function migrationMap(){
+  const g=new THREE.Group();
+  const landMat=new THREE.MeshStandardMaterial({color:0x2E5A44,roughness:0.8});
+  const waterMat=new THREE.MeshStandardMaterial({color:0x1a3a4a,roughness:0.3,transparent:true,opacity:0.7});
+  const base=new THREE.Mesh(new THREE.BoxGeometry(6,0.2,4),waterMat); g.add(base);
+  const asia=new THREE.Mesh(new THREE.BoxGeometry(2.5,0.3,2),landMat); asia.position.set(-2,0.2,-1); g.add(asia);
+  const na=new THREE.Mesh(new THREE.BoxGeometry(3,0.3,2.5),landMat); na.position.set(1.5,0.2,0.5); g.add(na);
+  const arrowMat=new THREE.MeshStandardMaterial({color:0xD4AF37,emissive:0x3d3210});
+  const arrow=new THREE.Mesh(new THREE.ConeGeometry(0.3,1,8),arrowMat); arrow.position.set(0,0.5,0); arrow.rotation.z=-Math.PI/2; g.add(arrow);
+  const shaft=new THREE.Mesh(new THREE.CylinderGeometry(0.1,0.1,1.5,8),arrowMat); shaft.position.set(-0.8,0.5,0); shaft.rotation.z=Math.PI/2; g.add(shaft);
+  return g;
+}
+
+function reburialBundle(){
+  const g=new THREE.Group();
+  const hideMat=new THREE.MeshStandardMaterial({color:0x8B6B4A,roughness:0.9});
+  const ropeMat=new THREE.MeshStandardMaterial({color:0xD4AF37,roughness:0.6});
+  const bundle=new THREE.Mesh(new THREE.CylinderGeometry(0.8,0.6,3,16),hideMat); g.add(bundle);
+  for(let i=-1;i<=1;i+=0.7){
+    const rope=new THREE.Mesh(new THREE.TorusGeometry(0.85,0.08,8,24),ropeMat);
+    rope.rotation.x=Math.PI/2; rope.position.y=i; g.add(rope);
+  }
+  const bough=new THREE.Mesh(new THREE.ConeGeometry(0.5,1.5,8),new THREE.MeshStandardMaterial({color:0x2E5A44,roughness:0.8}));
+  bough.position.set(0,2,0); g.add(bough);
+  return g;
+}
+
+function cedarBough(){
+  const g=new THREE.Group();
+  const mat=new THREE.MeshStandardMaterial({color:0x2E5A44,roughness:0.85});
+  const trunk=new THREE.Mesh(new THREE.CylinderGeometry(0.15,0.25,3,8),new THREE.MeshStandardMaterial({color:0x4a3a2a,roughness:0.9}));
+  g.add(trunk);
+  for(let i=0;i<6;i++){
+    const angle=(i/6)*Math.PI*2;
+    const branch=new THREE.Mesh(new THREE.ConeGeometry(0.4,1.5,6),mat);
+    branch.position.set(Math.cos(angle)*0.5,0.5+i*0.3,Math.sin(angle)*0.5);
+    branch.rotation.z=Math.cos(angle)*0.8; branch.rotation.x=Math.sin(angle)*0.8;
+    g.add(branch);
+  }
+  return g;
+}
+
+function salmon(){
+  const g=new THREE.Group();
+  const bodyMat=new THREE.MeshStandardMaterial({color:0xA0431E,roughness:0.5});
+  const bellyMat=new THREE.MeshStandardMaterial({color:0xE8DCC8,roughness:0.6});
+  const body=new THREE.Mesh(new THREE.SphereGeometry(1,24,24),bodyMat); body.scale.set(2.5,0.8,0.8); g.add(body);
+  const belly=new THREE.Mesh(new THREE.SphereGeometry(0.9,24,24),bellyMat); belly.scale.set(2.2,0.5,0.7); belly.position.y=-0.3; g.add(belly);
+  const tail=new THREE.Mesh(new THREE.ConeGeometry(0.6,1.2,4),bodyMat); tail.position.x=-2.5; tail.rotation.z=Math.PI/2; g.add(tail);
+  const eye=new THREE.Mesh(new THREE.SphereGeometry(0.15,16,16),new THREE.MeshStandardMaterial({color:0x1a1a1a})); eye.position.set(1.5,0.3,0.5); g.add(eye);
+  return g;
+}
+
+/* ============================================================
+   LAB DATA (DNA + RITUAL)
+   ============================================================ */
+const LAB_DATA = {
+  dna:{models:[
+    {title:"DNA Double Helix",category:"Genetics",desc:"The double helix structure of DNA. In 2015, scientists sequenced the Ancient One's genome from a 0.2-gram finger bone fragment.",
+     details:[{label:"Sample",value:"0.2g finger bone"},{label:"Coverage",value:"~1× genome"},{label:"Significance",value:"Proved Native American ancestry"}],
+     apa:"Rasmussen, M., Sikora, M., Albrechtsen, A., Korneliussen, T. S., Moreno-Mayar, J. V., Poznik, G. D., ... &amp; Willerslev, E. (2015). The ancestry and affiliations of Kennewick Man. <em>Nature</em>, <em>523</em>(7561), 455–458. https://doi.org/10.1038/nature14625",build:dnaHelix},
+    {title:"DNA Molecule Model",category:"Chemistry",desc:"Molecular model showing the structure of DNA bases. Theobromine and other molecules can be detected in ancient residues.",
+     details:[{label:"Formula",value:"C₇H₈N₄O₂ (theobromine example)"},{label:"Detection",value:"LC-MS/MS"},{label:"Significance",value:"Molecular archaeology"}],
+     apa:"Hurst, W. J., Tarka, S. M., Powis, T. G., Valdez, F., &amp; Hester, T. R. (2002). Cacao usage by the earliest Maya civilization. <em>Nature</em>, <em>418</em>(6895), 289–290.",build:dnaMolecule},
+    {title:"Chromosome Model",category:"Genetics",desc:"Chromosomes carry the genetic information. The Ancient One's genome showed genetic continuity in the Americas for at least 8,500 years.",
+     details:[{label:"Structure",value:"Chromosome with centromere"},{label:"Finding",value:"Genetic continuity"},{label:"Significance",value:"Confirms ancient roots"}],
+     apa:"Willerslev, E., &amp; Meltzer, D. J. (2015). Peopling of the Americas: A new chapter. <em>Nature</em>, <em>523</em>(7561), 417–418.",build:chromosome},
+    {title:"Migration Map",category:"Genetics",desc:"Schematic showing the migration route from Asia to the Americas. The Ancient One's genome confirms Native American ancestry.",
+     details:[{label:"Route",value:"Beringia land bridge"},{label:"Timing",value:"~15,000+ years ago"},{label:"Significance",value:"Peopling of the Americas"}],
+     apa:"Rasmussen, M., et al. (2015). The ancestry and affiliations of Kennewick Man. <em>Nature</em>, <em>523</em>(7561), 455–458.",build:migrationMap}
+  ]},
+  ritual:{models:[
+    {title:"Reburial Bundle",category:"Sacred Object",desc:"A traditional burial bundle used in reburial ceremonies. The Ancient One was reinterred in 2017 with traditional ceremonies by the five claimant tribes.",
+     details:[{label:"Material",value:"Hide, rope, cedar"},{label:"Ceremony",value:"Reburial (2017)"},{label:"Significance",value:"Sacred duty to return the dead"}],
+     apa:"Confederated Tribes of the Colville Reservation. (n.d.). <em>The Ancient One</em>. https://www.colvilletribes.com/",build:reburialBundle},
+    {title:"Cedar Bough",category:"Sacred Plant",desc:"Cedar is a sacred plant used in purification and burial ceremonies by Plateau tribes.",
+     details:[{label:"Species",value:"Western red cedar"},{label:"Use",value:"Purification, ceremony"},{label:"Significance",value:"Spiritual protection"}],
+     apa:"Confederated Tribes of the Umatilla Indian Reservation. (n.d.). <em>Kennewick Man / The Ancient One</em>. https://www.ctuir.org/",build:cedarBough},
+    {title:"Salmon (Ceremonial Food)",category:"Sacred Food",desc:"Salmon is a sacred food and central to Plateau tribal culture. The Columbia River provided salmon for millennia.",
+     details:[{label:"Species",value:"Chinook/King salmon"},{label:"River",value:"Columbia River"},{label:"Significance",value:"Lifeline and spiritual relative"}],
+     apa:"Native American Graves Protection and Repatriation Act (NAGPRA), 25 U.S.C. § 3001 (1990). https://www.nps.gov/subjects/nagpra/",build:salmon}
+  ]}
+};
+
+function initLab(key){
+  const cfg=LAB_DATA[key];
+  const el=document.getElementById(`${key}-container`);
+  if(!el){ console.error(key+' container missing'); return; }
+  if(LAB_STATE[key]) return;
+  const w = Math.max(el.clientWidth, 400);
+  const h = Math.max(el.clientHeight, 500);
+  const scene=new THREE.Scene();
+  scene.background=new THREE.Color(0x11231A);
+  const camera=new THREE.PerspectiveCamera(45,w/h,0.1,1000);
+  camera.position.set(0,0,10);
+  const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});
+  renderer.setSize(w,h);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+  renderer.setClearColor(0x11231A,1);
+  el.appendChild(renderer.domElement);
+  scene.add(new THREE.AmbientLight(0xffffff,0.9));
+  const l1=new THREE.DirectionalLight(0xfff5e6,1.4); l1.position.set(10,15,10); scene.add(l1);
+  const l2=new THREE.PointLight(0xC85A32,1.4,30); l2.position.set(-10,-10,5); scene.add(l2);
+  const l3=new THREE.PointLight(0xD4AF37,1.0,30); l3.position.set(10,-5,-8); scene.add(l3);
+  const state={scene,camera,renderer,current:null,drag:false,prev:{x:0,y:0},rx:0.3,ry:0.5};
+  LAB_STATE[key]=state;
+  const bc=document.getElementById(`${key}-buttons`);
+  bc.innerHTML='';
+  cfg.models.forEach((m,i)=>{
+    const b=document.createElement('button');
+    b.id=`${key}-btn-${i}`;
+    b.className="nav-btn-warm px-3 py-1.5 text-[11px] bg-parchment-800/70 text-parchment-200 rounded-lg border border-gold-500/20 hover:border-gold-500/50 transition-all";
+    b.innerText=m.title;
+    b.onclick=()=>loadLab(key,i);
+    bc.appendChild(b);
+  });
+  el.addEventListener('mousedown',e=>{state.drag=true;state.prev={x:e.clientX,y:e.clientY};});
+  el.addEventListener('mousemove',e=>{if(!state.drag)return;state.ry+=(e.clientX-state.prev.x)*0.008;state.rx+=(e.clientY-state.prev.y)*0.008;state.prev={x:e.clientX,y:e.clientY};});
+  window.addEventListener('mouseup',()=>{state.drag=false;});
+  loadLab(key,0);
+  (function loop(){
+    requestAnimationFrame(loop);
+    if(state.current){
+      state.current.rotation.y+=(state.ry-state.current.rotation.y)*0.06;
+      state.current.rotation.x+=(state.rx-state.current.rotation.x)*0.06;
+      if(!state.drag)state.ry+=0.006;
+    }
+    renderer.render(scene,camera);
+  })();
+  if(window.ResizeObserver)new ResizeObserver(()=>resizeR(renderer,camera,el)).observe(el);
+}
+
+function loadLab(key,index){
+  const cfg=LAB_DATA[key];
+  const state=LAB_STATE[key];
+  if(!state)return;
+  cfg.models.forEach((_,i)=>{
+    const b=document.getElementById(`${key}-btn-${i}`);
+    if(!b)return;
+    b.className=(i===index)
+      ? "nav-btn-warm px-3 py-1.5 text-[11px] bg-terracotta-600 text-parchment-100 rounded-lg border border-gold-500/50 transition-all"
+      : "nav-btn-warm px-3 py-1.5 text-[11px] bg-parchment-800/70 text-parchment-200 rounded-lg border border-gold-500/20 hover:border-gold-500/50 transition-all";
+  });
+  const m=cfg.models[index];
+  document.getElementById(`${key}-title`).innerText=m.title;
+  document.getElementById(`${key}-category`).innerText=m.category;
+  document.getElementById(`${key}-desc`).innerText=m.desc;
+  document.getElementById(`${key}-view-title`).innerText=m.title.toUpperCase();
+  document.getElementById(`${key}-apa`).innerHTML=m.apa;
+  document.getElementById(`${key}-details`).innerHTML=m.details.map(d=>`
+    <div class="bg-[#11231A]/80 p-3 rounded-xl border border-parchment-200/10">
+      <span class="font-semibold text-gold-500 block mb-1 text-[11px] uppercase tracking-wide">${d.label}</span>
+      <p class="text-parchment-200/90 leading-relaxed text-[13px]">${d.value}</p>
+    </div>`).join('');
+  if(state.current){
+    state.current.traverse(o=>{
+      if(o.geometry)o.geometry.dispose();
+      if(o.material)Array.isArray(o.material)?o.material.forEach(x=>x.dispose()):o.material.dispose();
+    });
+    state.scene.remove(state.current);
+  }
+  state.current=m.build();
+  state.scene.add(state.current);
+}
+
+/* ============================================================
+   BOOT
+   ============================================================ */
+window.addEventListener('load',()=>{
+  setTimeout(()=>{
+    initGIS();
+    LAB_INIT_FLAG.gis=true;
+    updateGIS(0);
+  },150);
+});
+</script>
+</body>
+</html>
