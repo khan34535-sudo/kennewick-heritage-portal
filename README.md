@@ -10,7 +10,7 @@ All Rights Reserved
 
 🔗 **Live Prototype**  
 → [View the interactive prototype](https://khan34535-sudo.github.io/kennewick-heritage-portal/)  
-*(If the link doesn't work, enable GitHub Pages in Settings → Pages → main branch → / (root))*
+
 
 ---
 
